@@ -4,6 +4,7 @@
 #include "mainDlg.h"
 #include "settings.h"
 #include "global.h"
+#include "lib/utf.h"
 #include <afxinet.h>
 
 CrmPopupDlg::CrmPopupDlg(CWnd* pParent)

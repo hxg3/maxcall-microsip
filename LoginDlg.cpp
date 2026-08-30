@@ -4,6 +4,8 @@
 #include "mainDlg.h"
 #include "settings.h"
 #include "global.h"
+#include "microsip.h"
+#include "lib/utf.h"
 #include <afxinet.h>
 
 LoginDlg::LoginDlg(CWnd* pParent)
