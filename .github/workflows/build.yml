@@ -30,21 +30,27 @@ jobs:
         Rename-Item pjproject-2.14.1 pjproject
         Remove-Item pjsip.tar.gz
 
-        # Create config_site.h
-        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjproject\pjlib\include\pj\config_site.h" -Encoding UTF8
+        # Create config_site.h with video support enabled
+        @"
+#define PJMEDIA_HAS_VIDEO 1
+#include <pj/config_site_sample.h>
+"@ | Set-Content -Path "pjproject\pjlib\include\pj\config_site.h" -Encoding UTF8
 
         # MicroSIP vcxproj expects ../pjlib/include, ../pjsip/include etc.
         # So we need the PJSIP component dirs at root level too
         $dirs = @("pjlib", "pjsip", "pjmedia", "pjnath", "pjlib-util")
+        $configSite = @"
+#define PJMEDIA_HAS_VIDEO 1
+#include <pj/config_site_sample.h>
+"@
         foreach ($d in $dirs) {
           if (Test-Path "pjproject\$d") {
             Copy-Item "pjproject\$d" $d -Recurse -Force
-            # Also put config_site.h in the copies
             $targetPath = "$d\include\pj\config_site.h"
             if (-not (Test-Path (Split-Path $targetPath))) {
               New-Item -ItemType Directory -Path (Split-Path $targetPath) -Force | Out-Null
             }
-            "#include <pj/config_site_sample.h>" | Set-Content -Path $targetPath -Encoding UTF8
+            $configSite | Set-Content -Path $targetPath -Encoding UTF8
           }
         }
 

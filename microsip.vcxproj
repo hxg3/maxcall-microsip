@@ -229,6 +229,7 @@
     <ClCompile Include="ButtonDialer.cpp" />
     <ClCompile Include="ButtonEx.cpp" />
     <ClCompile Include="Calls.cpp" />
+    <ClCompile Include="CrmPopupDlg.cpp" />
     <ClCompile Include="CListCtrl_Sortable.cpp" />
     <ClCompile Include="CListCtrl_SortItemsEx.cpp" />
     <ClCompile Include="ClosableTabCtrl.cpp" />
@@ -237,6 +238,7 @@
     <ClCompile Include="global.cpp" />
     <ClCompile Include="IconButton.cpp" />
     <ClCompile Include="jumplist.cpp" />
+    <ClCompile Include="LoginDlg.cpp" />
     <ClCompile Include="lib\CListCtrl_ToolTip.cpp" />
     <ClCompile Include="lib\CMask.cpp" />
     <ClCompile Include="lib\Crypto.cpp" />
