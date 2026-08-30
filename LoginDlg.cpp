@@ -72,11 +72,15 @@ void LoginDlg::OnBnClickedLogin()
 		return;
 	}
 
-	CString url;
-	url.Format(_T("http://%s:3001/api/auth/login"), m_server);
+	CStringA jsonData;
+	jsonData.Format("{\"username\":\"%s\",\"password\":\"%s\"}",
+		(LPCSTR)Utf8EncodeUcs2(m_username.GetBuffer()),
+		(LPCSTR)Utf8EncodeUcs2(m_password.GetBuffer()));
+	m_username.ReleaseBuffer();
+	m_password.ReleaseBuffer();
 
-	CString postData;
-	postData.Format(_T("username=%s&password=%s"), m_username, m_password);
+	CString url;
+	url.Format(_T("http://%s:3001/api/agent/login"), m_server);
 
 	try {
 		CInternetSession session;
@@ -92,12 +96,11 @@ void LoginDlg::OnBnClickedLogin()
 
 		if (AfxParseURLEx(url, dwServiceType, strServer, strObject, nPort, strUsername, strPassword)) {
 			pHttp = session.GetHttpConnection(strServer, 0, nPort);
-			CStringA strFormData = Utf8EncodeUcs2(postData);
 			pFile = pHttp->OpenRequest(CHttpConnection::HTTP_VERB_POST, strObject, 0, 1, 0, 0,
 				INTERNET_FLAG_TRANSFER_BINARY | INTERNET_FLAG_RELOAD | INTERNET_FLAG_DONT_CACHE);
 
-			CString headers = _T("Content-Type: application/x-www-form-urlencoded");
-			bool status = pFile->SendRequest(headers, (LPVOID)strFormData.GetBuffer(), strFormData.GetLength());
+			CString headers = _T("Content-Type: application/json");
+			bool status = pFile->SendRequest(headers, (LPVOID)(LPCSTR)jsonData, jsonData.GetLength());
 
 			if (status) {
 				DWORD statusCode;
@@ -117,17 +120,41 @@ void LoginDlg::OnBnClickedLogin()
 				session.Close();
 
 				if (statusCode == 200) {
-					accountSettings.account.server = m_server;
-					accountSettings.account.domain.Format(_T("%d"), m_port);
-					accountSettings.account.username = m_username;
-					accountSettings.account.password = m_password;
-					accountSettings.account.rememberPassword = m_remember ? 1 : 0;
-					accountSettings.account.displayName = m_username;
-					accountSettings.account.authID = m_username;
+					bool hasOk = (strstr(buf, "\"ok\":true") != NULL)
+						|| (strstr(buf, "\"ok\": true") != NULL);
 
-					loginSuccess = true;
-					EndDialog(IDOK);
-					return;
+					if (hasOk) {
+						accountSettings.account.server = m_server;
+						accountSettings.account.domain.Format(_T("%d"), m_port);
+						accountSettings.account.username = m_username;
+						accountSettings.account.password = m_password;
+						accountSettings.account.rememberPassword = m_remember ? 1 : 0;
+
+						CStringA nameVal = "";
+						const char* namePos = strstr(buf, "\"name\":\"");
+						if (!namePos) namePos = strstr(buf, "\"name\": \"");
+						if (namePos) {
+							namePos += 8;
+							const char* nameEnd = strchr(namePos, '\"');
+							if (nameEnd) {
+								nameVal = CStringA(namePos, nameEnd - namePos);
+							}
+						}
+						if (!nameVal.IsEmpty()) {
+							accountSettings.account.displayName = CString(nameVal);
+						}
+						else {
+							accountSettings.account.displayName = m_username;
+						}
+						accountSettings.account.authID = m_username;
+
+						loginSuccess = true;
+						EndDialog(IDOK);
+						return;
+					}
+					else {
+						AfxMessageBox(Translate(_T("Invalid username or password.")), MB_ICONERROR);
+					}
 				}
 				else {
 					AfxMessageBox(Translate(_T("Invalid username or password.")), MB_ICONERROR);
