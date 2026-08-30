@@ -26,18 +26,27 @@ jobs:
         $url = "https://github.com/pjsip/pjproject/archive/refs/tags/2.14.1.tar.gz"
         Invoke-WebRequest -Uri $url -OutFile pjsip.tar.gz -UseBasicParsing
         tar -xzf pjsip.tar.gz
-        # PJSIP sources go to parent dir (vcxproj expects ../pjlib, ../pjsip etc.)
-        $src = "pjproject-2.14.1"
-        Copy-Item $src "pjlib" -Recurse
-        Copy-Item $src "pjsip" -Recurse
-        Copy-Item $src "pjmedia" -Recurse
-        Copy-Item $src "pjnath" -Recurse
-        Copy-Item $src "pjlib-util" -Recurse
-        # Also keep a copy at pjproject for building the VS solution
-        Copy-Item $src "pjproject" -Recurse
-        Remove-Item $src -Recurse -Force
-        Remove-Item pjsip.tar.gz -Force
-        Write-Host "PJSIP sources prepared"
+        Rename-Item pjproject-2.14.1 pjsip
+        Remove-Item pjsip.tar.gz
+
+        # Create config_site.h (normally created by configure)
+        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjlib\include\pj\config_site.h" -Encoding UTF8
+        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjsip\pjlib\include\pj\config_site.h" -Encoding UTF8
+        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjmedia\pjlib\include\pj\config_site.h" -Encoding UTF8
+        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjnath\pjlib\include\pj\config_site.h" -Encoding UTF8
+        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjlib-util\pjlib\include\pj\config_site.h" -Encoding UTF8
+
+        # Copy PJSIP to parent-level dirs for MicroSIP include paths (../pjlib/include, etc.)
+        Copy-Item -Path "pjlib\*" -Destination "pjlib" -Recurse -Force
+        Copy-Item -Path "pjsip\*" -Destination "pjsip" -Recurse -Force
+        Copy-Item -Path "pjmedia\*" -Destination "pjmedia" -Recurse -Force
+        Copy-Item -Path "pjnath\*" -Destination "pjnath" -Recurse -Force
+        Copy-Item -Path "pjlib-util\*" -Destination "pjlib-util" -Recurse -Force
+
+        # Ensure lib dir exists for output
+        New-Item -ItemType Directory -Path "lib" -Force | Out-Null
+
+        Write-Host "PJSIP prepared"
 
     - name: Build PJSIP via VS Solution
       shell: pwsh
