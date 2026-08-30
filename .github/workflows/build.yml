@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
     - uses: actions/checkout@v4
       with:
@@ -19,18 +19,6 @@ jobs:
 
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
-
-    - name: Install MFC Component
-      shell: pwsh
-      run: |
-        $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-        $installPath = & $vsWhere -latest -property installationPath
-        $installerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
-        & $installerPath modify --installPath $installPath `
-          --add Microsoft.VisualStudio.Component.VC.ATL `
-          --add Microsoft.VisualStudio.Component.VC.MFC `
-          --quiet --wait --norestart
-        Write-Host "MFC installed"
 
     - name: Download and Prepare PJSIP
       shell: pwsh
