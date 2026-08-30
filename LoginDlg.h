@@ -1,0 +1,30 @@
+#pragma once
+
+#include "resource.h"
+#include "BaseDialog.h"
+
+#define UM_LOGIN_RESULT (WM_USER + 9001)
+
+class LoginDlg : public CBaseDialog
+{
+public:
+	LoginDlg(CWnd* pParent = NULL);
+	enum { IDD = IDD_LOGIN };
+
+	CString m_username;
+	CString m_password;
+	CString m_server;
+	int m_port;
+	BOOL m_remember;
+	bool loginSuccess;
+
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);
+	virtual BOOL OnInitDialog();
+	DECLARE_MESSAGE_MAP()
+
+public:
+	afx_msg void OnBnClickedLogin();
+	afx_msg void OnBnClickedCancel();
+	afx_msg void OnClose();
+};
