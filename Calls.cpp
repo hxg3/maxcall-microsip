@@ -28,6 +28,7 @@
 #include "utf.h"
 #include "CSVFile.h"
 #include "Markup.h"
+#include "json.h"
 
 enum {
 	MSIP_CALLS_COL_NAME,
@@ -123,6 +124,8 @@ BEGIN_MESSAGE_MAP(Calls, CBaseDialog)
 	ON_COMMAND(ID_COPY, OnMenuCopy)
 	ON_COMMAND(ID_DELETE, OnMenuDelete)
 	ON_COMMAND(ID_EXPORT, OnMenuExport)
+	ON_COMMAND(ID_VIEW_DETAILS, OnMenuViewDetails)
+	ON_COMMAND(ID_CALL_BACK, OnMenuCallBack)
 	ON_NOTIFY(NM_DBLCLK, IDC_CALLS, &Calls::OnNMDblclkCalls)
 	ON_MESSAGE(WM_CONTEXTMENU, OnContextMenu)
 #ifdef _GLOBAL_VIDEO
@@ -307,6 +310,8 @@ LRESULT Calls::OnContextMenu(WPARAM wParam, LPARAM lParam)
 #endif
 					tracker->EnableMenuItem(ID_CHAT, FALSE);
 					tracker->EnableMenuItem(ID_COPY, FALSE);
+					tracker->EnableMenuItem(ID_VIEW_DETAILS, FALSE);
+					tracker->EnableMenuItem(ID_CALL_BACK, FALSE);
 				}
 				else {
 					tracker->EnableMenuItem(ID_CALL, TRUE);
@@ -315,6 +320,8 @@ LRESULT Calls::OnContextMenu(WPARAM wParam, LPARAM lParam)
 #endif
 					tracker->EnableMenuItem(ID_CHAT, TRUE);
 					tracker->EnableMenuItem(ID_COPY, TRUE);
+					tracker->EnableMenuItem(ID_VIEW_DETAILS, TRUE);
+					tracker->EnableMenuItem(ID_CALL_BACK, TRUE);
 				}
 				tracker->EnableMenuItem(ID_DELETE, FALSE);
 			}
@@ -326,8 +333,12 @@ LRESULT Calls::OnContextMenu(WPARAM wParam, LPARAM lParam)
 				tracker->EnableMenuItem(ID_CHAT, TRUE);
 				tracker->EnableMenuItem(ID_COPY, TRUE);
 				tracker->EnableMenuItem(ID_DELETE, TRUE);
+				tracker->EnableMenuItem(ID_VIEW_DETAILS, TRUE);
+				tracker->EnableMenuItem(ID_CALL_BACK, TRUE);
 			}
 			tracker->AppendMenu(0, MF_SEPARATOR);
+			tracker->AppendMenu(MF_STRING, ID_VIEW_DETAILS, Translate(_T("View Details")));
+			tracker->AppendMenu(MF_STRING, ID_CALL_BACK, Translate(_T("Call Back")));
 			tracker->AppendMenu(MF_STRING, ID_EXPORT, Translate(_T("Export")));
 #ifdef _GLOBAL_VIDEO
 			if (accountSettings.disableVideo) {
@@ -859,6 +870,72 @@ void Calls::CallDecode(CString str, Call* pCall)
 				}
 			}
 		}
+	}
+}
+
+void Calls::OnMenuViewDetails()
+{
+	CListCtrl* list = (CListCtrl*)GetDlgItem(IDC_CALLS);
+	POSITION pos = list->GetFirstSelectedItemPosition();
+	if (!pos) return;
+	int i = list->GetNextSelectedItem(pos);
+	Call* pCall = (Call*)list->GetItemData(i);
+
+	CString typeName;
+	switch (pCall->type) {
+	case MSIP_CALL_OUT: typeName = Translate(_T("Outgoing")); break;
+	case MSIP_CALL_IN: typeName = Translate(_T("Incoming")); break;
+	case MSIP_CALL_MISS: typeName = Translate(_T("Missed")); break;
+	default: typeName = Translate(_T("Other")); break;
+	}
+
+	CString timeStr = FormatTime(pCall->time);
+	CString durationStr = MSIP::GetDuration(pCall->duration);
+
+	CString details;
+	details.Format(
+		_T("Name: %s\nNumber: %s\nType: %s\nTime: %s\nDuration: %s\nInfo: %s"),
+		pCall->name.IsEmpty() ? _T("(unknown)") : pCall->name,
+		pCall->number,
+		typeName,
+		timeStr,
+		durationStr,
+		pCall->info.IsEmpty() ? _T("(none)") : pCall->info
+	);
+
+	if (pCall->name.IsEmpty() && !pCall->number.IsEmpty()) {
+		CString url;
+		url.Format(_T("http://192.168.1.165:3001/api/callers/%s"), pCall->number);
+		URLGetAsyncData result = URLGetSync(url);
+		if (result.statusCode == 200 && !result.body.IsEmpty()) {
+			Json::Value json;
+			Json::Reader reader;
+			CStringA bodyA(result.body);
+			if (reader.parse(bodyA.GetBuffer(), json)) {
+				CString apiName = CA2T(json.get("name", "").asCString());
+				if (!apiName.IsEmpty()) {
+					details += _T("\nAPI Name: ") + apiName;
+				}
+				Json::Value notes = json.get("notes", Json::nullValue);
+				if (!notes.isNull() && !notes.asString().empty()) {
+					details += _T("\nNotes: ") + CA2T(notes.asCString());
+				}
+			}
+		}
+	}
+
+	AfxMessageBox(details, MB_OK | MB_ICONINFORMATION);
+}
+
+void Calls::OnMenuCallBack()
+{
+	CListCtrl* list = (CListCtrl*)GetDlgItem(IDC_CALLS);
+	POSITION pos = list->GetFirstSelectedItemPosition();
+	if (!pos) return;
+	int i = list->GetNextSelectedItem(pos);
+	Call* pCall = (Call*)list->GetItemData(i);
+	if (!pCall->number.IsEmpty()) {
+		mainDlg->MakeCall(pCall->number, false, false, true);
 	}
 }
 

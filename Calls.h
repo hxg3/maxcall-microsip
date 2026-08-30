@@ -84,6 +84,8 @@ public:
 	afx_msg void OnMenuCopy();
 	afx_msg void OnMenuDelete(); 
 	afx_msg void OnMenuExport();
+	afx_msg void OnMenuViewDetails();
+	afx_msg void OnMenuCallBack();
 	afx_msg LRESULT OnContextMenu(WPARAM wParam,LPARAM lParam);
 	afx_msg void OnNMDblclkCalls(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnEndtrack(NMHDR* pNMHDR, LRESULT* pResult);

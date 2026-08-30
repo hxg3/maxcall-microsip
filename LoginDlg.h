@@ -13,9 +13,6 @@ public:
 
 	CString m_username;
 	CString m_password;
-	CString m_server;
-	int m_port;
-	BOOL m_remember;
 	bool loginSuccess;
 
 protected:

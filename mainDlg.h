@@ -72,6 +72,7 @@ public:
 
 	bool m_startMinimized;
 	CButton m_ButtonMenu;
+	CButton m_ButtonLogout;
 	SettingsDlg* settingsDlg;
 	bool shortcutsEnabled;
 	bool shortcutsBottom;
@@ -227,6 +228,7 @@ public:
 	afx_msg BOOL OnQueryEndSession();
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedMenu();
+	afx_msg void OnBnClickedLogout();
 	afx_msg void OnClose();
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor);
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point );

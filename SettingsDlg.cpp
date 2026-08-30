@@ -688,7 +688,7 @@ void SettingsDlg::OnHScroll(UINT nSBCode, UINT, CScrollBar* sender)
 			accountSettings.volumeRing = ((CSliderCtrl*)GetDlgItem(IDC_SETTINGS_VOLUME_RING))->GetPos();
 			CString ringtone;
 			GetDlgItem(IDC_SETTINGS_RINGTONE)->GetWindowText(ringtone);
-			mainDlg->PlayerPlay(ringtone.IsEmpty() ? _T("ringtone.wav") : ringtone, true, false);
+			mainDlg->PlayerPlay(ringtone.IsEmpty() ? _T("res\\ring.wav") : ringtone, true, false);
 			accountSettings.volumeRing = volumeRingOld;
 		}
 	}

@@ -18,6 +18,8 @@ public:
 	CFont m_fontName;
 	CFont m_fontLabel;
 
+	void LoadCallerInfo();
+
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual BOOL OnInitDialog();

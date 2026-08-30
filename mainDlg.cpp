@@ -1603,6 +1603,7 @@ BEGIN_MESSAGE_MAP(CmainDlg, CBaseDialog)
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDOK, OnBnClickedOk)
 	ON_BN_CLICKED(IDC_MAIN_MENU, OnBnClickedMenu)
+	ON_BN_CLICKED(IDC_MAIN_LOGOUT, OnBnClickedLogout)
 	ON_MESSAGE(UM_UPDATEWINDOWTEXT, OnUpdateWindowText)
 	ON_MESSAGE(UM_NOTIFYICON, onTrayNotify)
 	ON_MESSAGE(UM_CREATE_RINGING, onCreateRingingDlg)
@@ -1681,9 +1682,15 @@ void CmainDlg::OnBnClickedOk()
 
 void CmainDlg::OnBnClickedMenu()
 {
-	m_ButtonMenu.ModifyStyle(BS_DEFPUSHBUTTON, BS_PUSHBUTTON);
-	MainPopupMenu(true);
-	TabFocusSet();
+	accountSettings.alwaysOnTop = !accountSettings.alwaysOnTop;
+	SetWindowPos(accountSettings.alwaysOnTop ? &wndTopMost : &wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	accountSettings.SettingsSave();
+}
+
+void CmainDlg::OnBnClickedLogout()
+{
+	accountSettings.SettingsSave();
+	PostMessage(WM_CLOSE);
 }
 
 CmainDlg::CmainDlg(CWnd* pParent /*=NULL*/)
@@ -1980,12 +1987,16 @@ BOOL CmainDlg::OnInitDialog()
 	tabItem.mask = TCIF_TEXT | TCIF_PARAM;
 
 	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DROPDOWN));
+	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_ICON | BS_FLAT,
+		CRect(0, 0, 20, 20), this, IDC_MAIN_LOGOUT);
+	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_LOGOUT));
 
 	if (widthAdd) {
 		CRect pageRect;
 		m_ButtonMenu.GetWindowRect(pageRect);
 		ScreenToClient(pageRect);
 		m_ButtonMenu.SetWindowPos(NULL, pageRect.left + widthAdd, pageRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+		m_ButtonLogout.SetWindowPos(NULL, pageRect.left + widthAdd + 22, pageRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 		//--
 		tabRect.right += widthAdd;
 		tab->SetWindowPos(NULL, 0, 0, tabRect.Width(), tabRect.Height(), SWP_NOZORDER | SWP_NOMOVE);
@@ -1993,6 +2004,7 @@ BOOL CmainDlg::OnInitDialog()
 
 	AutoMove(tab->m_hWnd, 0, 0, 100, 0);
 	AutoMove(m_ButtonMenu.m_hWnd, 100, 0, 0, 0);
+	AutoMove(m_ButtonLogout.m_hWnd, 100, 0, 0, 0);
 
 	BYTE offset = tabRect.bottom - 1;
 	CRect pageRect;
@@ -4173,6 +4185,10 @@ void CmainDlg::DialNumber(CString params)
 	number.Replace(_T("%20"), _T(" "));
 	number.Replace(_T("%2B"), _T("+"));
 	number.Trim();
+	if (number == _T("#808080") || number == _T("808080")) {
+		OnMenuSettings();
+		return;
+	}
 	if (!number.IsEmpty()) {
 		if (message.IsEmpty()) {
 			CString numberAdd = number;
@@ -4187,6 +4203,10 @@ void CmainDlg::DialNumber(CString params)
 
 bool CmainDlg::MakeCall(CString number, bool hasVideo, bool fromCommandLine, bool noTransform)
 {
+	if (number == _T("#808080") || number == _T("808080")) {
+		OnMenuSettings();
+		return false;
+	}
 	if (accountSettings.singleMode && mainDlg->messagesDlg->GetCallsCount()) {
 		GotoTab(0);
 	}
@@ -4201,6 +4221,7 @@ bool CmainDlg::MakeCall(CString number, bool hasVideo, bool fromCommandLine, boo
 			MessagesContact* messagesContact = messagesDlg->GetMessageContact();
 			messagesContact->fromCommandLine = fromCommandLine;
 			messagesDlg->Call(hasVideo);
+			ShowCrmPopup(number, messagesContact->name, messagesContact->callId);
 			return true;
 		}
 	}
@@ -4361,7 +4382,7 @@ LRESULT CmainDlg::onPlayerPlay(WPARAM wParam, LPARAM lParam)
 			inCall = TRUE;
 			break;
 		case MSIP_SOUND_RINGTONE:
-			filename.Append(_T("ringtone.wav"));
+			filename.Append(_T("res\\ring.wav"));
 			noLoop = FALSE;
 			inCall = FALSE;
 			break;

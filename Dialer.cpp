@@ -465,6 +465,15 @@ BOOL Dialer::OnInitDialog()
 	m_hIconMessage = LoadImageIcon(IDI_MESSAGE);
 	((CButton*)GetDlgItem(IDC_MESSAGE))->SetIcon(m_hIconMessage);
 
+	CWnd* dnd = GetDlgItem(IDC_DIALER_DND);
+	if (dnd) dnd->ShowWindow(SW_HIDE);
+	CWnd* aa = GetDlgItem(IDC_DIALER_AA);
+	if (aa) aa->ShowWindow(SW_HIDE);
+	CWnd* ac = GetDlgItem(IDC_DIALER_AC);
+	if (ac) ac->ShowWindow(SW_HIDE);
+	CWnd* fwd = GetDlgItem(IDC_DIALER_FWD);
+	if (fwd) fwd->ShowWindow(SW_HIDE);
+
 	UpdateCallButton();
 
 return TRUE;

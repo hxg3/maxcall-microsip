@@ -5,7 +5,6 @@
 #include "settings.h"
 #include "global.h"
 #include "lib/utf.h"
-#include <afxinet.h>
 
 CrmPopupDlg::CrmPopupDlg(CWnd* pParent)
 	: CBaseDialog(CrmPopupDlg::IDD, pParent)
@@ -20,6 +19,7 @@ CrmPopupDlg::~CrmPopupDlg(void)
 void CrmPopupDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CBaseDialog::DoDataExchange(pDX);
+	DDX_Text(pDX, IDC_CRM_CALLER_NAME, callerName);
 	DDX_Text(pDX, IDC_CRM_NOTES, notes);
 }
 
@@ -50,8 +50,9 @@ BOOL CrmPopupDlg::OnInitDialog()
 	m_fontLabel.CreateFontIndirect(&lf);
 	GetDlgItem(IDC_CRM_CALLER_NUMBER)->SetFont(&m_fontLabel);
 
-	GetDlgItem(IDC_CRM_CALLER_NAME)->SetWindowText(callerName);
 	GetDlgItem(IDC_CRM_CALLER_NUMBER)->SetWindowText(callerNumber);
+
+	LoadCallerInfo();
 
 	CRect screenRect;
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &screenRect, 0);
@@ -61,9 +62,53 @@ BOOL CrmPopupDlg::OnInitDialog()
 	int y = screenRect.top + 20;
 	SetWindowPos(&wndTopMost, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
 
-	SetTimer(1, 30000, NULL);
+	SetTimer(1, 120000, NULL);
 
 	return TRUE;
+}
+
+void CrmPopupDlg::LoadCallerInfo()
+{
+	CString server = accountSettings.account.server;
+	if (server.IsEmpty()) {
+		UpdateData(FALSE);
+		return;
+	}
+
+	CString url;
+	url.Format(_T("http://%s:3001/api/callers/%s"), server, callerNumber);
+
+	URLGetAsyncData result = URLGetSync(url);
+
+	if (result.statusCode >= 200 && result.statusCode < 300 && !result.body.IsEmpty()) {
+		CStringA bodyA = result.body;
+		CStringA nameA, notesA;
+
+		int nameIdx = bodyA.Find("\"name\":\"");
+		if (nameIdx >= 0) {
+			nameA = bodyA.Mid(nameIdx + 8);
+			int endQuote = nameA.Find('"');
+			if (endQuote >= 0)
+				nameA = nameA.Left(endQuote);
+		}
+
+		int notesIdx = bodyA.Find("\"notes\":\"");
+		if (notesIdx >= 0) {
+			notesA = bodyA.Mid(notesIdx + 9);
+			int endQuote = notesA.Find('"');
+			if (endQuote >= 0)
+				notesA = notesA.Left(endQuote);
+		}
+
+		if (!nameA.IsEmpty()) {
+			callerName = nameA;
+		}
+		if (!notesA.IsEmpty()) {
+			notes = notesA;
+		}
+	}
+
+	UpdateData(FALSE);
 }
 
 void CrmPopupDlg::OnBnClickedSave()
@@ -71,40 +116,23 @@ void CrmPopupDlg::OnBnClickedSave()
 	UpdateData(TRUE);
 
 	CString server = accountSettings.account.server;
+	if (server.IsEmpty()) {
+		OnBnClickedDismiss();
+		return;
+	}
+
 	CString url;
 	url.Format(_T("http://%s:3001/api/callers"), server);
 
-	CString postData;
-	postData.Format(_T("phone=%s&name=%s&notes=%s"), callerNumber, callerName, notes);
+	CStringA phoneA = Utf8EncodeUcs2(callerNumber);
+	CStringA nameA = Utf8EncodeUcs2(callerName);
+	CStringA notesA = Utf8EncodeUcs2(notes);
 
-	try {
-		CInternetSession session;
-		CHttpConnection* pHttp = NULL;
-		CHttpFile* pFile = NULL;
+	CStringA postData;
+	postData.Format("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}", phoneA, nameA, notesA);
 
-		DWORD dwServiceType;
-		CString strServer;
-		CString strObject;
-		INTERNET_PORT nPort;
-		CString strUsername;
-		CString strPassword;
-
-		if (AfxParseURLEx(url, dwServiceType, strServer, strObject, nPort, strUsername, strPassword)) {
-			pHttp = session.GetHttpConnection(strServer, 0, nPort);
-			CStringA strFormData = Utf8EncodeUcs2(postData);
-			pFile = pHttp->OpenRequest(CHttpConnection::HTTP_VERB_POST, strObject, 0, 1, 0, 0,
-				INTERNET_FLAG_TRANSFER_BINARY | INTERNET_FLAG_RELOAD | INTERNET_FLAG_DONT_CACHE);
-
-			CString headers = _T("Content-Type: application/x-www-form-urlencoded");
-			pFile->SendRequest(headers, (LPVOID)strFormData.GetBuffer(), strFormData.GetLength());
-
-			pFile->Close();
-			session.Close();
-		}
-	}
-	catch (CInternetException* e) {
-		e->Delete();
-	}
+	CString headers = _T("Content-Type: application/json");
+	URLGetSync(url, true, CString(postData), headers);
 
 	OnBnClickedDismiss();
 }

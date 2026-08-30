@@ -320,6 +320,9 @@ BOOL CmicrosipApp::InitInstance()
 		}
 	}
 
+	// Auto-configure account from login
+	accountSettings.AccountSave(1, &accountSettings.account);
+
 	CmainDlg *mainDlg = new CmainDlg;
 	m_pMainWnd = mainDlg;
 

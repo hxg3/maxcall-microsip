@@ -36,9 +36,7 @@ public:
 	pjsua_call_id call_id;
 	bool answered;
 	CFont m_font;
-	HICON m_hIconTransfer;
 	bool remoteHasVideo;
-	CFont m_font_ignore;
 	void CallAccept(BOOL hasVideo = FALSE);
 	void SetCallId(pjsua_call_id new_call_id);
 	void OnAnswer();
@@ -56,8 +54,6 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnBnClickedAudio();
-	afx_msg void OnBnClickedVideo();
-	afx_msg void OnBnClickedDecline();
+	afx_msg void OnBnClickedHide();
 	afx_msg void OnMove(int x, int y);
-	afx_msg void OnBnClickedTransfer();
 };

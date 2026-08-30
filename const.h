@@ -17,8 +17,8 @@
  */
 
 #pragma once
-#define _GLOBAL_VERSION "3.21.4"
-#define _GLOBAL_VERSION_COMMA 3,21,4,0
+#define _GLOBAL_VERSION "2.0.0"
+#define _GLOBAL_VERSION_COMMA 2,0,0,0
 #define _GLOBAL_KEY "*********"
 #define _GLOBAL_VIDEO 
-#define _GLOBAL_NAME "MicroSIP"
+#define _GLOBAL_NAME "MaxCall"
