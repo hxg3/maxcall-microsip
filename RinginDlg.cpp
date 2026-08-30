@@ -21,15 +21,13 @@
 #include "langpack.h"
 #include "mainDlg.h"
 #include "settings.h"
-#include "Markup.h"
 
-#include <vector>
-#include <algorithm>
+#define IDT_TIMER_RINGIN_HIDE 2001
 
 RinginDlg::RinginDlg(CWnd* pParent /*=NULL*/)
 	: CBaseDialog(RinginDlg::IDD, pParent)
 {
-	Create (IDD, pParent);
+	Create(IDD, pParent);
 	answered = false;
 }
 
@@ -40,22 +38,9 @@ RinginDlg::~RinginDlg(void)
 int RinginDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (langPack.rtl) {
-		ModifyStyleEx(0,WS_EX_LAYOUTRTL);
+		ModifyStyleEx(0, WS_EX_LAYOUTRTL);
 	}
 	return 0;
-}
-
-BOOL CALLBACK MyInfoEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
-{
-    MONITORINFOEX iMonitor;
-    iMonitor.cbSize = sizeof(MONITORINFOEX);
-    GetMonitorInfo(hMonitor, &iMonitor);
-    if (iMonitor.dwFlags == DISPLAY_DEVICE_MIRRORING_DRIVER) {
-        return true;
-    } else {
-        reinterpret_cast< std::vector<HMONITOR>* >(dwData)->push_back(hMonitor);
-        return true;
-    }
 }
 
 void RinginDlg::DoDataExchange(CDataExchange* pDX)
@@ -68,96 +53,55 @@ BOOL RinginDlg::OnInitDialog() {
 
 	AutoMove(IDC_ANSWER, 0, 100, 0, 0);
 	AutoMove(IDC_DECLINE, 0, 100, 0, 0);
-	AutoMove(IDC_IGNORE, 0, 100, 0, 0);
 
-#ifdef _GLOBAL_VIDEO
-	if (accountSettings.disableVideo) {
-		GetDlgItem(IDC_VIDEO)->ShowWindow(SW_HIDE);
-	}
-#endif
-	
 	TranslateDialog(this->m_hWnd);
 
 	CFont* font = this->GetFont();
 	LOGFONT lf;
 	font->GetLogFont(&lf);
 
-	lf.lfHeight = 12;
-	m_font_ignore.CreateFontIndirect(&lf);
-	GetDlgItem(IDC_IGNORE)->SetFont(&m_font_ignore);
-	GetDlgItem(IDC_IGNORE)->EnableWindow(FALSE);
-	if (accountSettings.noIgnoreCall) {
-		GetDlgItem(IDC_IGNORE)->ShowWindow(SW_HIDE);
-	}
 	lf.lfHeight = 24;
 	lf.lfWeight = FW_BOLD;
 	m_font.CreateFontIndirect(&lf);
 	GetDlgItem(IDC_CALLER_NAME)->SetFont(&m_font);
-	
-	GetDlgItem(IDC_CALLER_NAME)->ModifyStyleEx(WS_EX_CLIENTEDGE,0,SWP_NOSIZE|SWP_FRAMECHANGED);
-	GetDlgItem(IDC_CALLER_ADDR)->ModifyStyleEx(WS_EX_CLIENTEDGE,0,SWP_NOSIZE|SWP_FRAMECHANGED);
 
-	m_hIconTransfer = LoadImageIcon(IDI_FORWARD);
-	((CButton*)GetDlgItem(IDC_TRANSFER))->SetIcon(m_hIconTransfer);
-	int x,y;
+	GetDlgItem(IDC_CALLER_NAME)->ModifyStyleEx(WS_EX_CLIENTEDGE, 0, SWP_NOSIZE | SWP_FRAMECHANGED);
+	GetDlgItem(IDC_CALLER_ADDR)->ModifyStyleEx(WS_EX_CLIENTEDGE, 0, SWP_NOSIZE | SWP_FRAMECHANGED);
+
+	int x, y;
 	if (accountSettings.randomAnswerBox) {
 		CRect ringinRect;
 		GetWindowRect(&ringinRect);
-		if (accountSettings.multiMonitor) {		
-			std::vector<HMONITOR> hMonitorArray;
-			EnumDisplayMonitors(NULL, NULL, &MyInfoEnumProc, reinterpret_cast<LPARAM>(&hMonitorArray));
-			std::random_shuffle ( hMonitorArray.begin(), hMonitorArray.end() );
-			std::vector<HMONITOR>::iterator it = hMonitorArray.begin();
-			HMONITOR hMonitor = *it;
-			MONITORINFO mi;
-			mi.cbSize = sizeof(MONITORINFO);
-			GetMonitorInfo(hMonitor,&mi);
-			x = mi.rcWork.left + ( (mi.rcWork.right-mi.rcWork.left) -ringinRect.Width()) * rand() / RAND_MAX;
-			y = mi.rcWork.top + ( (mi.rcWork.bottom-mi.rcWork.top) -ringinRect.Height()) * rand() / RAND_MAX;
-		} else {
-			CRect primaryScreenRect;
-			SystemParametersInfo(SPI_GETWORKAREA,0,&primaryScreenRect,0);
-			x = primaryScreenRect.left + ( (primaryScreenRect.right-primaryScreenRect.left) -ringinRect.Width()) * rand() / RAND_MAX;
-			y = primaryScreenRect.top + ( (primaryScreenRect.bottom-primaryScreenRect.top) -ringinRect.Height()) * rand() / RAND_MAX;
-		}
-	} else {
-		if (mainDlg->ringinDlgs.GetCount())
-		{
+		CRect primaryScreenRect;
+		SystemParametersInfo(SPI_GETWORKAREA, 0, &primaryScreenRect, 0);
+		x = primaryScreenRect.left + ((primaryScreenRect.right - primaryScreenRect.left) - ringinRect.Width()) * rand() / RAND_MAX;
+		y = primaryScreenRect.top + ((primaryScreenRect.bottom - primaryScreenRect.top) - ringinRect.Height()) * rand() / RAND_MAX;
+	}
+	else {
+		if (mainDlg->ringinDlgs.GetCount()) {
 			CRect rect;
-			mainDlg->ringinDlgs.GetAt(mainDlg->ringinDlgs.GetCount()-1)->GetWindowRect(&rect);
-			x=rect.left+22;
-			y=rect.top+22;
-		} else {
+			mainDlg->ringinDlgs.GetAt(mainDlg->ringinDlgs.GetCount() - 1)->GetWindowRect(&rect);
+			x = rect.left + 22;
+			y = rect.top + 22;
+		}
+		else {
 			if (accountSettings.ringinX || accountSettings.ringinY) {
 				CRect screenRect;
-				MSIP::GetScreenRect(&screenRect);
-				if (accountSettings.multiMonitor) {
-					MSIP::GetScreenRect(&screenRect);
-				}
-				else {
-					SystemParametersInfo(SPI_GETWORKAREA, 0, &screenRect, 0);
-				}
+				SystemParametersInfo(SPI_GETWORKAREA, 0, &screenRect, 0);
 				CRect rect;
 				GetWindowRect(&rect);
-				int maxLeft = screenRect.right-rect.Width();
-				if (accountSettings.ringinX>maxLeft) {
-					x = maxLeft;
-				} else {
-					x = accountSettings.ringinX < screenRect.left ? screenRect.left : accountSettings.ringinX;
-				}
-				int maxTop = screenRect.bottom-rect.Height();
-				if (accountSettings.ringinY>maxTop) {
-					y = maxTop;
-				} else {
-					y = accountSettings.ringinY < screenRect.top ? screenRect.top : accountSettings.ringinY;
-				}
-			} else {
+				int maxLeft = screenRect.right - rect.Width();
+				x = accountSettings.ringinX > maxLeft ? maxLeft : (accountSettings.ringinX < screenRect.left ? screenRect.left : accountSettings.ringinX);
+				int maxTop = screenRect.bottom - rect.Height();
+				y = accountSettings.ringinY > maxTop ? maxTop : (accountSettings.ringinY < screenRect.top ? screenRect.top : accountSettings.ringinY);
+			}
+			else {
 				CRect ringinRect;
 				GetWindowRect(&ringinRect);
 				CRect primaryScreenRect;
-				SystemParametersInfo(SPI_GETWORKAREA,0,&primaryScreenRect,0);
-				x = (primaryScreenRect.Width()-ringinRect.Width())/2;
-				y = (primaryScreenRect.Height()-ringinRect.Height())/2;
+				SystemParametersInfo(SPI_GETWORKAREA, 0, &primaryScreenRect, 0);
+				x = (primaryScreenRect.Width() - ringinRect.Width()) / 2;
+				y = (primaryScreenRect.Height() - ringinRect.Height()) / 2;
 			}
 		}
 	}
@@ -189,9 +133,7 @@ BOOL RinginDlg::OnInitDialog() {
 void RinginDlg::SetCallId(pjsua_call_id new_call_id)
 {
 	call_id = new_call_id;
-
 }
-
 
 BEGIN_MESSAGE_MAP(RinginDlg, CBaseDialog)
 	ON_WM_CREATE()
@@ -202,33 +144,25 @@ BEGIN_MESSAGE_MAP(RinginDlg, CBaseDialog)
 	ON_BN_CLICKED(IDOK, &RinginDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &RinginDlg::OnBnClickedCancel)
 	ON_BN_CLICKED(IDC_ANSWER, &RinginDlg::OnBnClickedAudio)
-	ON_BN_CLICKED(IDC_DECLINE, &RinginDlg::OnBnClickedDecline)
-	ON_BN_CLICKED(IDC_VIDEO, &RinginDlg::OnBnClickedVideo)
-	ON_BN_CLICKED(IDC_TRANSFER, OnBnClickedTransfer)
+	ON_BN_CLICKED(IDC_DECLINE, &RinginDlg::OnBnClickedHide)
 END_MESSAGE_MAP()
 
-void RinginDlg::OnClose() 
+void RinginDlg::OnClose()
 {
-	if (accountSettings.noIgnoreCall) {
-		OnBnClickedDecline();
-	}
-	else {
-		Close();
-	}
+	OnBnClickedHide();
 }
 
 void RinginDlg::OnAnswer()
 {
 	answered = true;
-#ifdef _GLOBAL_VIDEO
-	GetDlgItem(IDC_VIDEO)->EnableWindow(FALSE);
-#endif
+	KillTimer(IDT_TIMER_RINGIN_HIDE);
 	GetDlgItem(IDC_ANSWER)->EnableWindow(FALSE);
 	GetDlgItem(IDC_DECLINE)->EnableWindow(FALSE);
 }
 
 void RinginDlg::Close(BOOL accept)
 {
+	KillTimer(IDT_TIMER_RINGIN_HIDE);
 	int count = mainDlg->ringinDlgs.GetCount();
 	for (int i = 0; i < count; i++)
 	{
@@ -259,50 +193,42 @@ void RinginDlg::OnBnClickedCancel()
 	Close();
 }
 
-void RinginDlg::OnBnClickedDecline()
+void RinginDlg::OnBnClickedHide()
 {
-	if (!answered) {
-		pjsua_call_info call_info;
-		pjsua_call_get_info(call_id, &call_info);
-		call_user_data *user_data = (call_user_data *)pjsua_call_get_user_data(call_id);
-		if (user_data) {
-			user_data->CS.Lock();
-			user_data->hangup = true;
-			user_data->CS.Unlock();
-		}		
-		msip_call_busy(call_id);
-		mainDlg->callIdIncomingIgnore = MSIP::PjToStr(&call_info.call_id);
-	}
-	Close();
+	ShowWindow(SW_HIDE);
+	SetTimer(IDT_TIMER_RINGIN_HIDE, 30000, NULL);
 }
 
-void RinginDlg::OnBnClickedAudio() 
+void RinginDlg::OnBnClickedAudio()
 {
 	CallAccept();
-}
-
-void RinginDlg::OnBnClickedVideo()
-{
-	CallAccept(TRUE);
 }
 
 void RinginDlg::CallAccept(BOOL hasVideo)
 {
 	if (!answered) {
+		KillTimer(IDT_TIMER_RINGIN_HIDE);
 		mainDlg->onCallAnswer((WPARAM)call_id, (LPARAM)hasVideo);
 	}
 }
 
 void RinginDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 {
-	SetTimer(IDT_TIMER_INIT_RINGIN,1000,NULL);
+	SetTimer(IDT_TIMER_INIT_RINGIN, 1000, NULL);
 }
 
-void RinginDlg::OnTimer (UINT_PTR TimerVal)
+void RinginDlg::OnTimer(UINT_PTR TimerVal)
 {
 	if (TimerVal == IDT_TIMER_INIT_RINGIN)
 	{
 		KillTimer(IDT_TIMER_INIT_RINGIN);
+	}
+	else if (TimerVal == IDT_TIMER_RINGIN_HIDE)
+	{
+		KillTimer(IDT_TIMER_RINGIN_HIDE);
+		if (!answered) {
+			Close();
+		}
 	}
 }
 
@@ -315,9 +241,4 @@ void RinginDlg::OnMove(int x, int y)
 		accountSettings.ringinY = cRect.top;
 		mainDlg->AccountSettingsPendingSave();
 	}
-}
-
-void RinginDlg::OnBnClickedTransfer()
-{
-	mainDlg->OpenTransferDlg(this, MSIP_ACTION_FORWARD, call_id);
 }

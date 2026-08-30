@@ -4495,7 +4495,7 @@ bool CmainDlg::CommandCallReject()
 {
 	if (ringinDlgs.GetCount()) {
 		RinginDlg *ringinDlg = ringinDlgs.GetAt(ringinDlgs.GetCount()-1);
-		ringinDlg->OnBnClickedDecline();
+		ringinDlg->OnBnClickedHide();
 		return true;
 	}
 	return false;
@@ -4511,7 +4511,7 @@ LRESULT CmainDlg::onShellHookMessage(WPARAM wParam, LPARAM lParam)
 			if (ringinDlgs.GetCount()) {
 				RinginDlg *ringinDlg = ringinDlgs.GetAt(0);
 				if (nCmd == APPCOMMAND_MEDIA_STOP) {
-					ringinDlg->OnBnClickedDecline();
+					ringinDlg->OnBnClickedHide();
 				}
 				else {
 					ringinDlg->CallAccept(ringinDlg->remoteHasVideo);

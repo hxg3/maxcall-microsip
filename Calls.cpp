@@ -918,7 +918,8 @@ void Calls::OnMenuViewDetails()
 				}
 				Json::Value notes = json.get("notes", Json::nullValue);
 				if (!notes.isNull() && !notes.asString().empty()) {
-					details += _T("\nNotes: ") + CA2T(notes.asCString());
+					CString noteStr = CA2T(notes.asCString());
+					details += _T("\nNotes: ") + noteStr;
 				}
 			}
 		}
