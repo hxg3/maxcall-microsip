@@ -21,6 +21,8 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual BOOL OnInitDialog();
+	virtual void TabFocusSet() {}
+	virtual bool GotoTab(int i, CTabCtrl* tab = NULL) { return true; }
 	DECLARE_MESSAGE_MAP()
 
 public:
