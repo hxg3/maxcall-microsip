@@ -95,6 +95,7 @@ jobs:
         msbuild microsip.sln `
           /p:Configuration=Release `
           /p:Platform=Win32 `
+          /p:PlatformToolset=v143 `
           /verbosity:minimal `
           /nologo
         if ($LASTEXITCODE -ne 0) { throw "MicroSIP build failed" }
