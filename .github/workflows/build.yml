@@ -23,34 +23,26 @@ jobs:
     - name: Download and Prepare PJSIP
       shell: pwsh
       run: |
-        # Download
         $url = "https://github.com/pjsip/pjproject/archive/refs/tags/2.14.1.tar.gz"
         Invoke-WebRequest -Uri $url -OutFile pjsip.tar.gz -UseBasicParsing
         tar -xzf pjsip.tar.gz
         Rename-Item pjproject-2.14.1 pjproject
         Remove-Item pjsip.tar.gz
 
-        # Create config_site.h with video support enabled
-        @"
-#define PJMEDIA_HAS_VIDEO 1
-#include <pj/config_site_sample.h>
-"@ | Set-Content -Path "pjproject\pjlib\include\pj\config_site.h" -Encoding UTF8
+        $lines = @("#define PJMEDIA_HAS_VIDEO 1", "#include <pj/config_site_sample.h>")
+        $path = "pjproject/pjlib/include/pj/config_site.h"
+        $lines | Set-Content -Path $path -Encoding UTF8
 
-        # MicroSIP vcxproj expects ../pjlib/include, ../pjsip/include etc.
-        # So we need the PJSIP component dirs at root level too
         $dirs = @("pjlib", "pjsip", "pjmedia", "pjnath", "pjlib-util")
-        $configSite = @"
-#define PJMEDIA_HAS_VIDEO 1
-#include <pj/config_site_sample.h>
-"@
         foreach ($d in $dirs) {
-          if (Test-Path "pjproject\$d") {
-            Copy-Item "pjproject\$d" $d -Recurse -Force
-            $targetPath = "$d\include\pj\config_site.h"
-            if (-not (Test-Path (Split-Path $targetPath))) {
-              New-Item -ItemType Directory -Path (Split-Path $targetPath) -Force | Out-Null
+          if (Test-Path "pjproject/$d") {
+            Copy-Item "pjproject/$d" "$d" -Recurse -Force
+            $target = "$d/include/pj/config_site.h"
+            $dir = Split-Path $target
+            if (-not (Test-Path $dir)) {
+              New-Item -ItemType Directory -Path $dir -Force | Out-Null
             }
-            $configSite | Set-Content -Path $targetPath -Encoding UTF8
+            $lines | Set-Content -Path $target -Encoding UTF8
           }
         }
 
@@ -60,7 +52,7 @@ jobs:
     - name: Build PJSIP
       shell: pwsh
       run: |
-        msbuild "pjproject\pjproject-vs14.sln" `
+        msbuild pjproject/pjproject-vs14.sln `
           /p:Configuration=Release-Static `
           /p:Platform=Win32 `
           /p:PlatformToolset=v143 `
@@ -71,27 +63,25 @@ jobs:
     - name: Collect PJSIP Libraries
       shell: pwsh
       run: |
-        # PJSIP VS builds to pjproject/lib/ (relative to pjproject/)
-        $src = "pjproject\lib"
+        $src = "pjproject/lib"
         if (Test-Path $src) {
-          Get-ChildItem "$src\*.lib" | Where-Object { $_.Length -gt 1024 } | ForEach-Object {
+          Get-ChildItem "$src/*.lib" | Where-Object { $_.Length -gt 1024 } | ForEach-Object {
             Write-Host "  $($_.Name) ($([math]::Round($_.Length/1KB)) KB)"
-            Copy-Item $_.FullName "lib\" -Force
+            Copy-Item $_.FullName "lib/" -Force
           }
         }
 
-        # Also check individual project output dirs
         Get-ChildItem "pjproject" -Recurse -Filter "*.lib" |
           Where-Object { $_.Length -gt 1024 -and $_.DirectoryName -match "(build|lib)$" } |
           ForEach-Object {
-            if (-not (Test-Path "lib\$($_.Name)")) {
+            if (-not (Test-Path "lib/$($_.Name)")) {
               Write-Host "  (extra) $($_.Name)"
-              Copy-Item $_.FullName "lib\" -Force
+              Copy-Item $_.FullName "lib/" -Force
             }
           }
 
         Write-Host "`nAll libraries:"
-        Get-ChildItem "lib\*.lib" | ForEach-Object {
+        Get-ChildItem "lib/*.lib" | ForEach-Object {
           Write-Host "  $($_.Name) ($([math]::Round($_.Length/1KB)) KB)"
         }
 
