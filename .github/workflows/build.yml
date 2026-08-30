@@ -20,77 +20,72 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: Download PJSIP 2.14.1
+    - name: Download and Prepare PJSIP
       shell: pwsh
       run: |
+        # Download
         $url = "https://github.com/pjsip/pjproject/archive/refs/tags/2.14.1.tar.gz"
         Invoke-WebRequest -Uri $url -OutFile pjsip.tar.gz -UseBasicParsing
         tar -xzf pjsip.tar.gz
-        Rename-Item pjproject-2.14.1 pjsip
+        Rename-Item pjproject-2.14.1 pjproject
         Remove-Item pjsip.tar.gz
 
-        # Create config_site.h (normally created by configure)
-        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjlib\include\pj\config_site.h" -Encoding UTF8
-        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjsip\pjlib\include\pj\config_site.h" -Encoding UTF8
-        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjmedia\pjlib\include\pj\config_site.h" -Encoding UTF8
-        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjnath\pjlib\include\pj\config_site.h" -Encoding UTF8
-        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjlib-util\pjlib\include\pj\config_site.h" -Encoding UTF8
+        # Create config_site.h
+        "#include <pj/config_site_sample.h>" | Set-Content -Path "pjproject\pjlib\include\pj\config_site.h" -Encoding UTF8
 
-        # Copy PJSIP to parent-level dirs for MicroSIP include paths (../pjlib/include, etc.)
-        Copy-Item -Path "pjlib\*" -Destination "pjlib" -Recurse -Force
-        Copy-Item -Path "pjsip\*" -Destination "pjsip" -Recurse -Force
-        Copy-Item -Path "pjmedia\*" -Destination "pjmedia" -Recurse -Force
-        Copy-Item -Path "pjnath\*" -Destination "pjnath" -Recurse -Force
-        Copy-Item -Path "pjlib-util\*" -Destination "pjlib-util" -Recurse -Force
+        # MicroSIP vcxproj expects ../pjlib/include, ../pjsip/include etc.
+        # So we need the PJSIP component dirs at root level too
+        $dirs = @("pjlib", "pjsip", "pjmedia", "pjnath", "pjlib-util")
+        foreach ($d in $dirs) {
+          if (Test-Path "pjproject\$d") {
+            Copy-Item "pjproject\$d" $d -Recurse -Force
+            # Also put config_site.h in the copies
+            $targetPath = "$d\include\pj\config_site.h"
+            if (-not (Test-Path (Split-Path $targetPath))) {
+              New-Item -ItemType Directory -Path (Split-Path $targetPath) -Force | Out-Null
+            }
+            "#include <pj/config_site_sample.h>" | Set-Content -Path $targetPath -Encoding UTF8
+          }
+        }
 
-        # Ensure lib dir exists for output
         New-Item -ItemType Directory -Path "lib" -Force | Out-Null
+        Write-Host "PJSIP ready"
 
-        Write-Host "PJSIP prepared"
-
-    - name: Build PJSIP via VS Solution
+    - name: Build PJSIP
       shell: pwsh
       run: |
-        $sln = "pjproject\pjproject-vs14.sln"
-        Write-Host "Building PJSIP (Release-Static|Win32)..."
-        msbuild $sln `
+        msbuild "pjproject\pjproject-vs14.sln" `
           /p:Configuration=Release-Static `
           /p:Platform=Win32 `
           /p:PlatformToolset=v143 `
           /verbosity:minimal `
           /nologo
-        if ($LASTEXITCODE -ne 0) {
-          Write-Host "PJSIP build failed, trying Release instead..."
-          msbuild $sln `
-            /p:Configuration=Release `
-            /p:Platform=Win32 `
-            /p:PlatformToolset=v143 `
-            /verbosity:minimal `
-            /nologo
-          if ($LASTEXITCODE -ne 0) { throw "PJSIP build failed" }
-        }
+        if ($LASTEXITCODE -ne 0) { throw "PJSIP build failed" }
 
-    - name: Collect and Prepare Libraries
+    - name: Collect PJSIP Libraries
       shell: pwsh
       run: |
-        $libDir = "lib"
-        if (-not (Test-Path $libDir)) { New-Item -ItemType Directory -Path $libDir -Force }
-
-        # Find all .lib files from PJSIP build (skip test/sample exes)
-        $pjsipLibs = Get-ChildItem -Path "pjproject" -Recurse -Filter "*.lib" |
-          Where-Object { $_.Length -gt 1024 -and $_.DirectoryName -match "lib" } |
-          Sort-Object Name
-
-        Write-Host "Found $($pjsipLibs.Count) PJSIP libraries:"
-        foreach ($f in $pjsipLibs) {
-          $kb = [math]::Round($f.Length / 1KB)
-          Write-Host "  $($f.Name) ($kb KB)"
-          Copy-Item $f.FullName -Destination $libDir -Force
+        # PJSIP VS builds to pjproject/lib/ (relative to pjproject/)
+        $src = "pjproject\lib"
+        if (Test-Path $src) {
+          Get-ChildItem "$src\*.lib" | Where-Object { $_.Length -gt 1024 } | ForEach-Object {
+            Write-Host "  $($_.Name) ($([math]::Round($_.Length/1KB)) KB)"
+            Copy-Item $_.FullName "lib\" -Force
+          }
         }
 
-        # List what we have
-        Write-Host "`nLibraries in lib/:"
-        Get-ChildItem $libDir -Filter "*.lib" | ForEach-Object {
+        # Also check individual project output dirs
+        Get-ChildItem "pjproject" -Recurse -Filter "*.lib" |
+          Where-Object { $_.Length -gt 1024 -and $_.DirectoryName -match "(build|lib)$" } |
+          ForEach-Object {
+            if (-not (Test-Path "lib\$($_.Name)")) {
+              Write-Host "  (extra) $($_.Name)"
+              Copy-Item $_.FullName "lib\" -Force
+            }
+          }
+
+        Write-Host "`nAll libraries:"
+        Get-ChildItem "lib\*.lib" | ForEach-Object {
           Write-Host "  $($_.Name) ($([math]::Round($_.Length/1KB)) KB)"
         }
 
@@ -108,7 +103,7 @@ jobs:
       shell: pwsh
       run: |
         $exe = Get-ChildItem -Path "." -Recurse -Filter "microsip.exe" |
-          Where-Object { $_.FullName -notmatch "pjproject|pjlib|pjsip|pjmedia|pjnath|pjlib-util" } |
+          Where-Object { $_.FullName -notmatch "pjproject" } |
           Select-Object -First 1
 
         if (-not $exe) {
@@ -118,7 +113,7 @@ jobs:
         }
 
         $sizeMB = [math]::Round($exe.Length / 1MB, 2)
-        Write-Host "Found: $($exe.FullName) ($sizeMB MB)"
+        Write-Host "SUCCESS: $($exe.FullName) ($sizeMB MB)"
         Copy-Item $exe.FullName "MaxCare-MicroSIP.exe"
 
     - name: Upload artifact
