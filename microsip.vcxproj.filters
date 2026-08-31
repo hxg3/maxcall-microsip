@@ -352,7 +352,7 @@
     <Image Include="res\inactive.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="res\microsip.ico">
+    <Image Include="res\maxcall.ico">
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\offline.ico">

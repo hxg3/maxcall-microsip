@@ -138,21 +138,14 @@ LONG WINAPI ExceptionFilter(EXCEPTION_POINTERS *ExceptionInfo)
 	else {
 		CString message;
 		if (blockDump) {
-			CString caption;
-			caption.Format(_T("%s %s"), _T(_GLOBAL_NAME_NICE), Translate(_T("Update Available")));
-			message.Format(_T("%s %s"),
-				Translate(_T("The current version is unstable on your system. You should update to the latest version.")),
-				Translate(_T("Do you want to update now?"))
-			);
-			if (::MessageBox(NULL, message, caption, MB_YESNO | MB_ICONQUESTION) == IDYES) {
-				MSIP::OpenURL(_T("https://www.microsip.org/downloads"));
-			}
+			message = Translate(_T("MaxCall encountered a critical error. Please contact your system administrator."));
+			AfxMessageBox(message, MB_ICONERROR);
 		}
 		else {
 #ifdef _GLOBAL_VIDEO
 			message.Format(_T("A crash happened. Check your video card drivers or update DirectX. Try to install the LITE version (without video). Tracking info: %s%s"), tm.Format(_T("%Y%m%d%H%M%S")), sent ? _T("Y") : _T("N"));
 #else
-			message.Format(_T("A crash happened. Make sure your system is healthy and you have enough free memory and hard disk space. You can try to uninstall Microsip \"with configuration\", and install it again. If this is a softphone bug, you can contact us to help fix it. Tracking info: %s%s"), tm.Format(_T("%Y%m%d%H%M%S")), sent ? _T("Y") : _T("N"));
+			message.Format(_T("MaxCall encountered an unexpected error. Please contact your system administrator. Tracking info: %s%s"), tm.Format(_T("%Y%m%d%H%M%S")), sent ? _T("Y") : _T("N"));
 #endif
 			AfxMessageBox(message, MB_ICONERROR);
 		}
@@ -201,6 +194,11 @@ BOOL CALLBACK MsipEnumWindowsProc(HWND hWnd, LPARAM lParam)
 BOOL CmicrosipApp::InitInstance()
 {
 	accountSettings.Init();
+	// يبدأ MaxCall جلسة موثقة جديدة من الخادم عند كل تشغيل دون بيانات سابقة.
+	accountSettings.AccountDelete(1);
+	accountSettings.accountId = 0;
+	accountSettings.account = Account();
+	accountSettings.SettingsSave();
 
 	SetUnhandledExceptionFilter(ExceptionFilter);
 	MsipEnumWindowsProcData data;
@@ -319,9 +317,6 @@ BOOL CmicrosipApp::InitInstance()
 			return FALSE;
 		}
 	}
-
-	// Auto-configure account from login
-	accountSettings.AccountSave(1, &accountSettings.account);
 
 	CmainDlg *mainDlg = new CmainDlg;
 	m_pMainWnd = mainDlg;

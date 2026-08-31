@@ -91,26 +91,11 @@ BOOL CBaseDialog::PreTranslateMessage(MSG* pMsg)
 							catched = TRUE;
 						}
 					}
-					if (pMsg->wParam == 'M') {
-						postCommand = ID_ACCOUNT_EDIT_RANGE;
-					}
-					if (pMsg->wParam == 'L') {
-						postCommand = ID_ACCOUNT_EDIT_LOCAL;
-					}
-					if (pMsg->wParam == 'P') {
-						postCommand = ID_SETTINGS;
-					}
-					if (pMsg->wParam == 'S') {
-						postCommand = ID_SHORTCUTS;
-					}
 					if (pMsg->wParam == VK_OEM_3 || pMsg->wParam == 'I') {
 						postCommand = ID_MUTE_INPUT;
 					}
 					if (pMsg->wParam == 'O') {
 						postCommand = ID_MUTE_OUTPUT;
-					}
-					if (pMsg->wParam == 'W') {
-						postCommand = ID_MENU_WEBSITE;
 					}
 					if (pMsg->wParam == 'Q') {
 						postCommand = ID_EXIT;

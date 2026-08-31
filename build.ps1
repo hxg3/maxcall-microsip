@@ -1,4 +1,4 @@
-# MaxCare MicroSIP Build Script
+# MaxCall Build Script
 param(
     [string]$Configuration = "Release",
     [string]$Platform = "Win32",
@@ -8,7 +8,7 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
-Write-Host "=== MaxCare MicroSIP Builder ===" -ForegroundColor Cyan
+Write-Host "=== MaxCall Builder ===" -ForegroundColor Cyan
 
 $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 $vsPath = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
@@ -31,13 +31,13 @@ if (-not $SkipPjsip -and -not (Test-Path "$scriptDir\..\lib\libpjproject-i386-Wi
         Rename-Item "$scriptDir\..\pjproject-2.14.1" $pjsipDir
     }
     Push-Location $pjsipDir
-    & cmd /c "call configure.bat --disable-sound --disable-video"
+    & cmd /c "call configure.bat --disable-video"
     $vcvars = "$vsPath\VC\Auxiliary\Build\vcvars32.bat"
     & cmd /c "call `"$vcvars`" && nmake /f Makefile.win_static"
     Pop-Location
 }
 
-Write-Host "Building MicroSIP..." -ForegroundColor Yellow
+Write-Host "Building MaxCall..." -ForegroundColor Yellow
 $slnFile = "$scriptDir\microsip.sln"
 & $msbuild $slnFile /p:Configuration=$Configuration /p:Platform=$Platform /verbosity:minimal /nologo
 

@@ -30,7 +30,7 @@
 
 #define _GLOBAL_DIALER_WIDTH 162
 
-#define _GLOBAL_ICON "res\\microsip.ico"
+#define _GLOBAL_ICON "res\\maxcall.ico"
 #define _GLOBAL_ICON_INACTIVE "res\\inactive.ico"
 
 #define _GLOBAL_HEIGHT1 0
@@ -61,9 +61,9 @@
 #define _GLOBAL_SETT_AA_DEFAULT "button"
 
 #define _GLOBAL_BUSINESS_FEATURE "This feature is not available in the free version."
-#define _GLOBAL_MENU_WEBSITE "http://www.microsip.org/"
-#define _GLOBAL_MENU_HELP "http://www.microsip.org/help"
-#define _GLOBAL_HELP_WEBSITE "http://www.microsip.org/help"
+#define _GLOBAL_MENU_WEBSITE ""
+#define _GLOBAL_MENU_HELP ""
+#define _GLOBAL_HELP_WEBSITE ""
 
 #define _GLOBAL_EC_DEFAULT "1"
 
@@ -92,5 +92,5 @@
 #ifndef _GLOBAL_VIDEO
 #endif
 
-#define _GLOBAL_DIALER_CALL_COLOR RGB(76, 217, 100)
-#define _GLOBAL_DIALER_END_COLOR RGB(255, 59, 48)
+#define _GLOBAL_DIALER_CALL_COLOR RGB(8, 123, 120)
+#define _GLOBAL_DIALER_END_COLOR RGB(201, 74, 74)

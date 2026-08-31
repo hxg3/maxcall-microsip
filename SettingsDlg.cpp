@@ -374,6 +374,7 @@ BOOL SettingsDlg::OnInitDialog()
 		i = 1;
 	}
 	combobox->SetCurSel(i);
+	combobox->ShowWindow(SW_HIDE);
 	CRegKey regKey;
 	CString rab;
 	LPTSTR ptr;
@@ -628,6 +629,7 @@ LRESULT SettingsDlg::OnUpdateSettings(WPARAM wParam, LPARAM lParam)
 	default:
 		accountSettings.updatesInterval = _T("");
 	}
+	accountSettings.updatesInterval = _T("never");
 
 	msip_startup_set(((CButton*)GetDlgItem(IDC_SETTINGS_STARTUP))->GetCheck());
 
@@ -1017,4 +1019,3 @@ void SettingsDlg::OnBnClickedStun()
 		}
 	}
 }
-

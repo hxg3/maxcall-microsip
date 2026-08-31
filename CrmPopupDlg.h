@@ -19,6 +19,7 @@ public:
 	CFont m_fontLabel;
 
 	void LoadCallerInfo();
+	void Restore();
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);

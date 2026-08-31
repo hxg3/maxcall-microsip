@@ -40,6 +40,7 @@ public:
 	void CallAccept(BOOL hasVideo = FALSE);
 	void SetCallId(pjsua_call_id new_call_id);
 	void OnAnswer();
+	void Restore();
 private:
 	void Close(BOOL accept = FALSE);
 protected:

@@ -5,6 +5,7 @@
 #include "settings.h"
 #include "global.h"
 #include "lib/utf.h"
+#include "json.h"
 
 CrmPopupDlg::CrmPopupDlg(CWnd* pParent)
 	: CBaseDialog(CrmPopupDlg::IDD, pParent)
@@ -67,25 +68,15 @@ BOOL CrmPopupDlg::OnInitDialog()
 	return TRUE;
 }
 
-static CString UnescapeJson(const CStringA& input)
+static CString JsonStringToCString(const Json::Value& value)
 {
-	CStringA unescaped;
-	for (int i = 0; i < input.GetLength(); i++) {
-		if (input[i] == '\\' && i + 1 < input.GetLength()) {
-			char next = input[i + 1];
-			if (next == 'n') { unescaped += '\n'; i++; }
-			else if (next == 'r') { unescaped += '\r'; i++; }
-			else if (next == 't') { unescaped += '\t'; i++; }
-			else if (next == '"') { unescaped += '"'; i++; }
-			else if (next == '\\') { unescaped += '\\'; i++; }
-			else { unescaped += input[i]; }
-		}
-		else {
-			unescaped += input[i];
-		}
+	if (!value.isString()) {
+		return _T("");
 	}
+
+	std::string utf8 = value.asString();
 	wchar_t* ucs2 = NULL;
-	Utf8DecodeCP(unescaped.GetBuffer(), CP_UTF8, &ucs2);
+	Utf8DecodeCP((char*)utf8.c_str(), CP_UTF8, &ucs2);
 	CString res;
 	if (ucs2) {
 		res = ucs2;
@@ -94,23 +85,32 @@ static CString UnescapeJson(const CStringA& input)
 	return res;
 }
 
-static CStringA EscapeJson(const CString& input)
+static CString EscapeJson(const CString& input)
 {
-	char* encoded = Utf8EncodeUcs2(input);
-	CStringA src = encoded ? encoded : "";
-	if (encoded) free(encoded);
-
-	CStringA escaped;
-	for (int i = 0; i < src.GetLength(); i++) {
-		char c = src[i];
-		if (c == '"') escaped += "\\\"";
-		else if (c == '\\') escaped += "\\\\";
-		else if (c == '\n') escaped += "\\n";
-		else if (c == '\r') escaped += "\\r";
-		else if (c == '\t') escaped += "\\t";
+	CString escaped;
+	for (int i = 0; i < input.GetLength(); i++) {
+		wchar_t c = input[i];
+		if (c == L'"') escaped += _T("\\\"");
+		else if (c == L'\\') escaped += _T("\\\\");
+		else if (c == L'\b') escaped += _T("\\b");
+		else if (c == L'\f') escaped += _T("\\f");
+		else if (c == L'\n') escaped += _T("\\n");
+		else if (c == L'\r') escaped += _T("\\r");
+		else if (c == L'\t') escaped += _T("\\t");
+		else if (c < 0x20) escaped.AppendFormat(_T("\\u%04x"), c);
 		else escaped += c;
 	}
 	return escaped;
+}
+
+static CString UrlEncodeCallerNumber(const CString& number)
+{
+	char* utf8 = Utf8EncodeUcs2(number);
+	CStringA encoded = urlencode(utf8 ? CStringA(utf8) : CStringA());
+	if (utf8) {
+		free(utf8);
+	}
+	return CString(encoded);
 }
 
 void CrmPopupDlg::LoadCallerInfo()
@@ -122,36 +122,20 @@ void CrmPopupDlg::LoadCallerInfo()
 	}
 
 	CString url;
-	url.Format(_T("http://%s:3001/api/callers/%s"), server, callerNumber);
+	url.Format(_T("http://%s:3001/api/callers/%s"), server, UrlEncodeCallerNumber(callerNumber));
 
 	URLGetAsyncData result = URLGetSync(url);
 
 	if (result.statusCode >= 200 && result.statusCode < 300 && !result.body.IsEmpty()) {
-		CStringA bodyA = result.body;
-
-		int nameIdx = bodyA.Find("\"name\":\"");
-		if (nameIdx >= 0) {
-			CStringA valA = bodyA.Mid(nameIdx + 8);
-			int endQuote = valA.Find('"');
-			if (endQuote >= 0) {
-				valA = valA.Left(endQuote);
-				CString decodedName = UnescapeJson(valA);
-				if (!decodedName.IsEmpty()) {
-					callerName = decodedName;
-				}
+		Json::Value caller;
+		Json::Reader reader;
+		if (reader.parse((LPCSTR)result.body, caller)) {
+			CString savedName = JsonStringToCString(caller["name"]);
+			if (!savedName.IsEmpty()) {
+				callerName = savedName;
 			}
-		}
-
-		int notesIdx = bodyA.Find("\"notes\":\"");
-		if (notesIdx >= 0) {
-			CStringA valA = bodyA.Mid(notesIdx + 9);
-			int endQuote = valA.Find('"');
-			if (endQuote >= 0) {
-				valA = valA.Left(endQuote);
-				CString decodedNotes = UnescapeJson(valA);
-				if (!decodedNotes.IsEmpty()) {
-					notes = decodedNotes;
-				}
+			if (caller["notes"].isString()) {
+				notes = JsonStringToCString(caller["notes"]);
 			}
 		}
 	}
@@ -165,22 +149,26 @@ void CrmPopupDlg::OnBnClickedSave()
 
 	CString server = accountSettings.account.server;
 	if (server.IsEmpty()) {
-		OnBnClickedDismiss();
+		AfxMessageBox(Translate(_T("Unable to save caller details. Check the server connection and try again.")), MB_ICONERROR);
 		return;
 	}
 
 	CString url;
 	url.Format(_T("http://%s:3001/api/callers"), server);
 
-	CStringA phoneA = EscapeJson(callerNumber);
-	CStringA nameA = EscapeJson(callerName);
-	CStringA notesA = EscapeJson(notes);
+	CString phone = EscapeJson(callerNumber);
+	CString name = EscapeJson(callerName);
+	CString callerNotes = EscapeJson(notes);
 
-	CStringA postData;
-	postData.Format("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}", (LPCSTR)phoneA, (LPCSTR)nameA, (LPCSTR)notesA);
+	CString postData;
+	postData.Format(_T("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}"), phone, name, callerNotes);
 
-	CString headers = _T("Content-Type: application/json");
-	URLGetSync(url, true, CString(postData), headers);
+	CString headers = _T("Content-Type: application/json; charset=utf-8");
+	URLGetAsyncData result = URLGetSync(url, true, postData, headers);
+	if (result.statusCode < 200 || result.statusCode >= 300) {
+		AfxMessageBox(Translate(_T("Unable to save caller details. Check the server connection and try again.")), MB_ICONERROR);
+		return;
+	}
 
 	OnBnClickedDismiss();
 }
@@ -188,7 +176,8 @@ void CrmPopupDlg::OnBnClickedSave()
 void CrmPopupDlg::OnBnClickedDismiss()
 {
 	KillTimer(1);
-	DestroyWindow();
+	UpdateData(TRUE);
+	ShowWindow(SW_HIDE);
 }
 
 void CrmPopupDlg::OnClose()
@@ -202,4 +191,11 @@ void CrmPopupDlg::OnTimer(UINT_PTR nIDEvent)
 		OnBnClickedDismiss();
 	}
 	CBaseDialog::OnTimer(nIDEvent);
+}
+
+void CrmPopupDlg::Restore()
+{
+	ShowWindow(SW_SHOWNORMAL);
+	SetForegroundWindow();
+	SetTimer(1, 120000, NULL);
 }

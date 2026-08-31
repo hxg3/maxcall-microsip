@@ -6,6 +6,23 @@
 #include "global.h"
 #include "microsip.h"
 #include "lib/utf.h"
+#include "json.h"
+
+static CString EscapeLoginJson(const CString& value)
+{
+	CString escaped;
+	for (int i = 0; i < value.GetLength(); i++) {
+		switch (value[i]) {
+		case L'"': escaped += _T("\\\""); break;
+		case L'\\': escaped += _T("\\\\"); break;
+		case L'\n': escaped += _T("\\n"); break;
+		case L'\r': escaped += _T("\\r"); break;
+		case L'\t': escaped += _T("\\t"); break;
+		default: escaped += value[i]; break;
+		}
+	}
+	return escaped;
+}
 
 LoginDlg::LoginDlg(CWnd* pParent)
 	: CBaseDialog(LoginDlg::IDD, pParent)
@@ -54,51 +71,47 @@ void LoginDlg::OnBnClickedLogin()
 		return;
 	}
 
-	CStringA jsonData;
-	jsonData.Format("{\"username\":\"%s\",\"password\":\"%s\"}",
-		(LPCSTR)Utf8EncodeUcs2(m_username.GetBuffer()),
-		(LPCSTR)Utf8EncodeUcs2(m_password.GetBuffer()));
-	m_username.ReleaseBuffer();
-	m_password.ReleaseBuffer();
+	CString jsonData;
+	jsonData.Format(_T("{\"username\":\"%s\",\"password\":\"%s\"}"),
+		(LPCTSTR)EscapeLoginJson(m_username),
+		(LPCTSTR)EscapeLoginJson(m_password));
 
 	CString url = _T("http://192.168.1.165:3001/api/agent/login");
 	CString headers = _T("Content-Type: application/json");
 
-	URLGetAsyncData result = URLGetSync(url, true, CString(jsonData), headers);
+	URLGetAsyncData result = URLGetSync(url, true, jsonData, headers);
 
 	if (result.statusCode == 200) {
-		bool hasOk = (result.body.Find("\"ok\":true") >= 0)
-			|| (result.body.Find("\"ok\": true") >= 0);
+		Json::Value response;
+		Json::Reader reader;
+		bool parsed = reader.parse((LPCSTR)CStringA(result.body), response);
 
-		if (hasOk) {
-			CStringA extVal = "";
-			const char* extPos = strstr(result.body, "\"extension\":\"");
-			if (!extPos) extPos = strstr(result.body, "\"extension\": \"");
-			if (extPos) {
-				extPos += 13;
-				const char* extEnd = strchr(extPos, '\"');
-				if (extEnd) {
-					extVal = CStringA(extPos, extEnd - extPos);
-				}
+		if (parsed && response.get("ok", false).asBool()) {
+			Json::Value extension = response["extension"];
+			CString extVal;
+			if (extension.isString()) {
+				extVal = MSIP::Utf8DecodeUni(extension.asCString());
+			}
+			else if (extension.isInt() || extension.isUInt()) {
+				extVal.Format(_T("%d"), extension.asInt());
+			}
+			if (extVal.IsEmpty()) {
+				AfxMessageBox(Translate(_T("The account has no assigned extension.")), MB_ICONERROR);
+				return;
 			}
 
-			CStringA nameVal = "";
-			const char* namePos = strstr(result.body, "\"name\":\"");
-			if (!namePos) namePos = strstr(result.body, "\"name\": \"");
-			if (namePos) {
-				namePos += 8;
-				const char* nameEnd = strchr(namePos, '\"');
-				if (nameEnd) {
-					nameVal = CStringA(namePos, nameEnd - namePos);
-				}
-			}
+			Json::Value displayName = response["name"];
+			CString nameVal = displayName.isString() ? MSIP::Utf8DecodeUni(displayName.asCString()) : _T("");
+
+			// الامتداد مؤقت لهذه الجلسة فقط؛ نحذف بيانات المستخدم السابق قبل التهيئة.
+			accountSettings.AccountDelete(1);
 
 			accountSettings.account.server = _T("192.168.1.165");
 			accountSettings.account.port = 5060;
-			accountSettings.account.username = CString(extVal);
+			accountSettings.account.username = extVal;
 			accountSettings.account.password = m_password;
-			accountSettings.account.authID = CString(extVal);
-			accountSettings.account.displayName = nameVal.IsEmpty() ? m_username : CString(nameVal);
+			accountSettings.account.authID = extVal;
+			accountSettings.account.displayName = nameVal.IsEmpty() ? m_username : nameVal;
 			accountSettings.account.domain = _T("192.168.1.165");
 			accountSettings.account.rememberPassword = false;
 			accountSettings.account.transport = _T("udp");

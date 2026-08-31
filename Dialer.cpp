@@ -365,17 +365,11 @@ BOOL Dialer::OnInitDialog()
 	AutoMove(IDC_KEY_GRATE, 67, height3, 33, height);
 	AutoMove(IDC_CLEAR, 67, height4, 33, height);
 
-#ifdef _GLOBAL_VIDEO
-	AutoMove(IDC_VIDEO_CALL, 0, 85, 14, 15);
-	AutoMove(IDC_CALL, 14, 85, 72, 15);
-	AutoMove(IDC_MESSAGE, 86, 85, 14, 15);
-#else
-	AutoMove(IDC_CALL, 0, 85, 84, 15);
-	AutoMove(IDC_MESSAGE, 84, 85, 16, 15);
-#endif
+	AutoMove(IDC_CRM_OPEN, 0, 85, 18, 15);
+	AutoMove(IDC_CALL, 18, 85, 82, 15);
 
-	AutoMove(IDC_END, 14, 85, 72, 15);
-	AutoMove(IDC_HOLD, 0, 85, 14, 15);
+	AutoMove(IDC_END, 28, 85, 58, 15);
+	AutoMove(IDC_HOLD, 14, 85, 14, 15);
 	AutoMove(IDC_TRANSFER, 86, 85, 14, 15);
 
 	AutoMove(IDC_BUTTON_MUTE_OUTPUT, 0, 100, 0, 0);
@@ -458,12 +452,12 @@ BOOL Dialer::OnInitDialog()
 	((CButton*)GetDlgItem(IDC_HOLD))->SetIcon(m_hIconHold);
 	m_hIconTransfer = LoadImageIcon(IDI_TRANSFER);
 	((CButton*)GetDlgItem(IDC_TRANSFER))->SetIcon(m_hIconTransfer);
+	((CButton*)GetDlgItem(IDC_CRM_OPEN))->SetIcon(LoadImageIcon(IDI_CONTACT));
+	GetDlgItem(IDC_CRM_OPEN)->SetWindowText(Translate(_T("Caller details")));
+	GetDlgItem(IDC_MESSAGE)->ShowWindow(SW_HIDE);
 #ifdef _GLOBAL_VIDEO
-	m_hIconVideo = LoadImageIcon(IDI_VIDEO);
-	((CButton*)GetDlgItem(IDC_VIDEO_CALL))->SetIcon(m_hIconVideo);
+	GetDlgItem(IDC_VIDEO_CALL)->ShowWindow(SW_HIDE);
 #endif
-	m_hIconMessage = LoadImageIcon(IDI_MESSAGE);
-	((CButton*)GetDlgItem(IDC_MESSAGE))->SetIcon(m_hIconMessage);
 
 	CWnd* dnd = GetDlgItem(IDC_DIALER_DND);
 	if (dnd) dnd->ShowWindow(SW_HIDE);
@@ -527,6 +521,7 @@ BEGIN_MESSAGE_MAP(Dialer, CBaseDialog)
 	ON_WM_MOUSEMOVE()
 
 	ON_BN_CLICKED(IDC_CALL, OnBnClickedCall)
+	ON_BN_CLICKED(IDC_CRM_OPEN, OnBnClickedCrmOpen)
 	ON_BN_CLICKED(IDC_DIALER_DTMF, OnBnClickedDTMF)
 #ifdef _GLOBAL_VIDEO
 	ON_BN_CLICKED(IDC_VIDEO_CALL, OnBnClickedVideoCall)
@@ -632,13 +627,13 @@ void Dialer::RebuildButtons(bool init)
 		}
 		m_ButtonRec.DestroyWindow();
 	}
-	bool addDND = accountSettings.denyIncoming == _T("button");
-	bool addFWD = accountSettings.forwarding == _T("button") && !accountSettings.forwardingNumber.IsEmpty();
-	bool addAA = accountSettings.autoAnswer == _T("button");
-	bool addAC = !accountSettings.singleMode;
-	bool addConf = true;
-	
-	bool addRec = accountSettings.recordingButton;
+	// أزرار الإجراءات السريعة السفلية غير معروضة لتقليل ازدحام واجهة الاتصال.
+	bool addDND = false;
+	bool addFWD = false;
+	bool addAA = false;
+	bool addAC = false;
+	bool addConf = false;
+	bool addRec = false;
 	if (addDND || addFWD || addAA || addAC || addConf || addRec) {
 		CRect windowRect;
 		if (!init) {
@@ -1173,10 +1168,7 @@ void Dialer::UpdateCallButton(BOOL forse, int callsCount)
 		if (callsCount) {
 			if (!isEndVisisble) {
 				m_ButtonCall.ShowWindow(SW_HIDE);
-#ifdef _GLOBAL_VIDEO
-				GetDlgItem(IDC_VIDEO_CALL)->ShowWindow(SW_HIDE);
-#endif
-				GetDlgItem(IDC_MESSAGE)->ShowWindow(SW_HIDE);
+				GetDlgItem(IDC_CRM_OPEN)->ShowWindow(SW_SHOW);
 				GetDlgItem(IDC_HOLD)->ShowWindow(SW_SHOW);
 				GetDlgItem(IDC_TRANSFER)->ShowWindow(SW_SHOW);
 				m_ButtonEnd.ShowWindow(SW_SHOW);
@@ -1190,10 +1182,7 @@ void Dialer::UpdateCallButton(BOOL forse, int callsCount)
 				m_ButtonEnd.ShowWindow(SW_HIDE);
 
 				m_ButtonCall.ShowWindow(SW_SHOW);
-#ifdef _GLOBAL_VIDEO
-				GetDlgItem(IDC_VIDEO_CALL)->ShowWindow(SW_SHOW);
-#endif
-				GetDlgItem(IDC_MESSAGE)->ShowWindow(SW_SHOW);
+				GetDlgItem(IDC_CRM_OPEN)->ShowWindow(SW_SHOW);
 			}
 		}
 		state = callsCount || len ? true : false;
@@ -1203,20 +1192,7 @@ void Dialer::UpdateCallButton(BOOL forse, int callsCount)
 		state = len ? true : false;
 	}
 	m_ButtonCall.EnableWindow(state);
-#ifdef _GLOBAL_VIDEO
-	if (accountSettings.disableVideo) {
-		GetDlgItem(IDC_VIDEO_CALL)->EnableWindow(false);
-	}
-	else {
-		GetDlgItem(IDC_VIDEO_CALL)->EnableWindow(state);
-	}
-#endif
-	if (accountSettings.disableMessaging) {
-		GetDlgItem(IDC_MESSAGE)->EnableWindow(false);
-	}
-	else {
-		GetDlgItem(IDC_MESSAGE)->EnableWindow(state);
-	}
+	GetDlgItem(IDC_CRM_OPEN)->EnableWindow((len || (accountSettings.singleMode && callsCount > 0) || !mainDlg->ringinDlgs.IsEmpty()) ? TRUE : FALSE);
 	CButton *buttonRedial = (CButton *)GetDlgItem(IDC_REDIAL);
 	CButton *buttonDelete = (CButton *)GetDlgItem(IDC_DELETE);
 	if (!state) {
@@ -1269,6 +1245,23 @@ void Dialer::Clear(bool update)
 void Dialer::OnBnClickedCall()
 {
 	Action(ACTION_CALL);
+}
+
+void Dialer::OnBnClickedCrmOpen()
+{
+	CString number;
+	((CComboBox*)GetDlgItem(IDC_NUMBER))->GetWindowText(number);
+	number.Trim();
+	MessagesContact* messagesContact = mainDlg->messagesDlg->GetMessageContact();
+	if (number.IsEmpty() && messagesContact) {
+		number = messagesContact->number;
+	}
+	if (!number.IsEmpty()) {
+		mainDlg->ShowCrmPopup(number, messagesContact ? messagesContact->name : _T(""), messagesContact ? messagesContact->callId : PJSUA_INVALID_ID);
+	}
+	else {
+		mainDlg->ShowRingingDialogs();
+	}
 }
 
 void Dialer::OnBnClickedDTMF()
@@ -1682,4 +1675,3 @@ void Dialer::OnBnClickedShortcut(UINT nID)
 		mainDlg->ShortcutAction(&shortcuts.GetAt(i), false, !(((CButton*)GetDlgItem(nID))->GetCheck() & BST_CHECKED));
 	}
 }
-

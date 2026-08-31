@@ -145,6 +145,7 @@ public:
 	afx_msg void OnBnClickedVoicemail();
 
 	afx_msg void OnBnClickedCall();
+	afx_msg void OnBnClickedCrmOpen();
 	afx_msg void OnBnClickedDTMF();
 #ifdef _GLOBAL_VIDEO
 	afx_msg void OnBnClickedVideoCall();

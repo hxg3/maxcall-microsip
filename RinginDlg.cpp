@@ -22,8 +22,6 @@
 #include "mainDlg.h"
 #include "settings.h"
 
-#define IDT_TIMER_RINGIN_HIDE 2001
-
 RinginDlg::RinginDlg(CWnd* pParent /*=NULL*/)
 	: CBaseDialog(RinginDlg::IDD, pParent)
 {
@@ -50,6 +48,7 @@ void RinginDlg::DoDataExchange(CDataExchange* pDX)
 
 BOOL RinginDlg::OnInitDialog() {
 	CBaseDialog::OnInitDialog();
+	ModifyStyle(WS_SYSMENU, 0, SWP_FRAMECHANGED);
 
 	AutoMove(IDC_ANSWER, 0, 100, 0, 0);
 	AutoMove(IDC_DECLINE, 0, 100, 0, 0);
@@ -155,14 +154,12 @@ void RinginDlg::OnClose()
 void RinginDlg::OnAnswer()
 {
 	answered = true;
-	KillTimer(IDT_TIMER_RINGIN_HIDE);
 	GetDlgItem(IDC_ANSWER)->EnableWindow(FALSE);
 	GetDlgItem(IDC_DECLINE)->EnableWindow(FALSE);
 }
 
 void RinginDlg::Close(BOOL accept)
 {
-	KillTimer(IDT_TIMER_RINGIN_HIDE);
 	int count = mainDlg->ringinDlgs.GetCount();
 	for (int i = 0; i < count; i++)
 	{
@@ -196,7 +193,6 @@ void RinginDlg::OnBnClickedCancel()
 void RinginDlg::OnBnClickedHide()
 {
 	ShowWindow(SW_HIDE);
-	SetTimer(IDT_TIMER_RINGIN_HIDE, 30000, NULL);
 }
 
 void RinginDlg::OnBnClickedAudio()
@@ -207,7 +203,6 @@ void RinginDlg::OnBnClickedAudio()
 void RinginDlg::CallAccept(BOOL hasVideo)
 {
 	if (!answered) {
-		KillTimer(IDT_TIMER_RINGIN_HIDE);
 		mainDlg->onCallAnswer((WPARAM)call_id, (LPARAM)hasVideo);
 	}
 }
@@ -223,12 +218,13 @@ void RinginDlg::OnTimer(UINT_PTR TimerVal)
 	{
 		KillTimer(IDT_TIMER_INIT_RINGIN);
 	}
-	else if (TimerVal == IDT_TIMER_RINGIN_HIDE)
-	{
-		KillTimer(IDT_TIMER_RINGIN_HIDE);
-		if (!answered) {
-			Close();
-		}
+}
+
+void RinginDlg::Restore()
+{
+	if (!answered && call_id != PJSUA_INVALID_ID) {
+		ShowWindow(SW_SHOWNORMAL);
+		SetForegroundWindow();
 	}
 }
 

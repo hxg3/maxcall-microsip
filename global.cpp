@@ -768,7 +768,11 @@ static DWORD WINAPI URLGetAsyncThread(LPVOID lpParam)
 				data->headers.Empty();
 				if (data->post) {
 					if (!data->postData.IsEmpty()) {
-						strFormData = data->postData;
+						char* utf8PostData = Utf8EncodeUcs2(data->postData);
+						if (utf8PostData) {
+							strFormData = utf8PostData;
+							free(utf8PostData);
+						}
 					} else {
 						int pos = strObject.Find(_T("?"));
 						if (pos != -1) {

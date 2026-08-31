@@ -523,8 +523,9 @@ void AccountSettings::Init()
 	callWaiting = _wtoi(str);
 
 	ptr = updatesInterval.GetBuffer(255);
-	GetPrivateProfileString(section, _T("updatesInterval"), NULL, ptr, 256, iniFile);
+	GetPrivateProfileString(section, _T("updatesInterval"), _T("never"), ptr, 256, iniFile);
 	updatesInterval.ReleaseBuffer();
+	updatesInterval = _T("never");
 	ptr = str.GetBuffer(255);
 	GetPrivateProfileString(section, _T("checkUpdatesTime"), NULL, ptr, 256, iniFile);
 	str.ReleaseBuffer();
@@ -1288,4 +1289,3 @@ void ShortcutsSave()
 		WritePrivateProfileString(_T("Shortcuts"), key, ShortcutEncode(shortcut), accountSettings.iniFile);
 	}
 }
-

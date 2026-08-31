@@ -69,6 +69,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>14.0.25431.1</_ProjectFileVersion>
+    <TargetName>MaxCall</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
@@ -274,6 +275,11 @@
     <ClCompile Include="Transfer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="res\ring.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="AAOptionsDlg.h" />
     <ClInclude Include="AccountDlg.h" />
     <ClInclude Include="AddDlg.h" />
@@ -340,7 +346,7 @@
     <Image Include="res\icon1.ico" />
     <Image Include="res\icon2.ico" />
     <Image Include="res\inactive.ico" />
-    <Image Include="res\microsip.ico" />
+    <Image Include="res\maxcall.ico" />
     <Image Include="res\offline.ico" />
     <Image Include="res\online.ico" />
     <Image Include="res\ringing.ico" />

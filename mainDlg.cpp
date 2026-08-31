@@ -1557,6 +1557,14 @@ CmainDlg::~CmainDlg(void)
 
 void CmainDlg::OnDestroy()
 {
+	if (imageListTabs) {
+		CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
+		if (tab) {
+			tab->SetImageList(NULL);
+		}
+		delete imageListTabs;
+		imageListTabs = NULL;
+	}
 	if (mmNotificationClient) {
 		delete mmNotificationClient;
 	}
@@ -1689,6 +1697,9 @@ void CmainDlg::OnBnClickedMenu()
 
 void CmainDlg::OnBnClickedLogout()
 {
+	accountSettings.AccountDelete(1);
+	accountSettings.accountId = 0;
+	accountSettings.account = Account();
 	accountSettings.SettingsSave();
 	PostMessage(WM_CLOSE);
 }
@@ -1710,6 +1721,7 @@ CmainDlg::CmainDlg(CWnd* pParent /*=NULL*/)
 
 	pageCalls = NULL;
 	pageContacts = NULL;
+	imageListTabs = NULL;
 	mainDlg = this;
 	widthAdd = 0;
 	heightAdd = 0;
@@ -1984,19 +1996,29 @@ BOOL CmainDlg::OnInitDialog()
 	tabRect.top += lineRect.bottom;
 	tabRect.bottom += lineRect.bottom;
 	tab->SetWindowPos(NULL, tabRect.left, tabRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
-	tabItem.mask = TCIF_TEXT | TCIF_PARAM;
+	imageListTabs = new CImageList();
+	imageListTabs->Create(16, 16, ILC_COLOR32, 3, 3);
+	imageListTabs->SetBkColor(RGB(255, 255, 255));
+	imageListTabs->Add(LoadImageIcon(IDI_CALL_OUT));
+	imageListTabs->Add(LoadImageIcon(IDI_CALL_IN));
+	imageListTabs->Add(LoadImageIcon(IDI_CONTACT));
+	tab->SetImageList(imageListTabs);
+	tabItem.mask = TCIF_IMAGE | TCIF_PARAM;
 
-	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DROPDOWN));
+	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DEFAULT_STARRED));
+	m_ButtonMenu.SetWindowText(Translate(_T("Always on Top")));
 	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_ICON | BS_FLAT,
-		CRect(0, 0, 20, 20), this, IDC_MAIN_LOGOUT);
-	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_LOGOUT));
+		CRect(_GLOBAL_WIDTH - 39, 3, _GLOBAL_WIDTH - 21, 14), this, IDC_MAIN_LOGOUT);
+	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_EXIT));
+	m_ButtonLogout.SetWindowText(Translate(_T("Logout")));
+	m_ButtonMenu.SetWindowPos(NULL, _GLOBAL_WIDTH - 19, 3, 16, 11, SWP_NOZORDER);
 
 	if (widthAdd) {
 		CRect pageRect;
 		m_ButtonMenu.GetWindowRect(pageRect);
 		ScreenToClient(pageRect);
 		m_ButtonMenu.SetWindowPos(NULL, pageRect.left + widthAdd, pageRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
-		m_ButtonLogout.SetWindowPos(NULL, pageRect.left + widthAdd + 22, pageRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+		m_ButtonLogout.SetWindowPos(NULL, pageRect.left + widthAdd - 20, pageRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 		//--
 		tabRect.right += widthAdd;
 		tab->SetWindowPos(NULL, 0, 0, tabRect.Width(), tabRect.Height(), SWP_NOZORDER | SWP_NOMOVE);
@@ -2010,7 +2032,6 @@ BOOL CmainDlg::OnInitDialog()
 	CRect pageRect;
 
 	pageDialer = new Dialer(this);
-	tabItem.pszText = Translate(_T("Phone"));
 	tabItem.iImage = 0;
 	tabItem.lParam = (LPARAM)pageDialer;
 	tab->InsertItem(99, &tabItem);
@@ -2022,7 +2043,6 @@ BOOL CmainDlg::OnInitDialog()
 
 		pageCalls = new Calls(this);
 		pageCalls->OnCreated();
-		tabItem.pszText = Translate(_T("Logs"));
 		tabItem.iImage = 1;
 		tabItem.lParam = (LPARAM)pageCalls;
 		tab->InsertItem(99, &tabItem);
@@ -2032,8 +2052,7 @@ BOOL CmainDlg::OnInitDialog()
 
 		pageContacts = new Contacts(this);
 		pageContacts->OnCreated();
-		tabItem.pszText = Translate(_T("Contacts"));
-		tabItem.iImage = 3;
+		tabItem.iImage = 2;
 		tabItem.lParam = (LPARAM)pageContacts;
 		tab->InsertItem(99, &tabItem);
 		pageContacts->GetWindowRect(pageRect);
@@ -2346,7 +2365,6 @@ LRESULT CmainDlg::onTrayNotify(WPARAM wParam, LPARAM lParam)
 
 void CmainDlg::MainPopupMenu(bool isMenuButton)
 {
-	CString str;
 	CPoint point;
 	if (isMenuButton) {
 		CWnd *menuButton = mainDlg->GetDlgItem(IDC_MAIN_MENU);
@@ -2359,121 +2377,12 @@ void CmainDlg::MainPopupMenu(bool isMenuButton)
 	}
 	CMenu menu;
 	menu.CreatePopupMenu();
-	CMenu* tracker = &menu;
-	bool basic = false;
-	if (!accountSettings.hidden && !basic) {
-
-			// -- add
-			tracker->AppendMenu(MF_STRING, ID_ACCOUNT_ADD, Translate(_T("Add Account...")));
-			//-- edit
-			CMenu editMenu;
-			editMenu.CreatePopupMenu();
-			bool checked = false;
-			Account acc;
-			int i = 0;
-			while (true) {
-				if (!accountSettings.AccountLoad(i + 1, &acc)) {
-					break;
-				}
-				if (!acc.label.IsEmpty()) {
-					str = acc.label;
-				}
-				else {
-					str.Format(_T("%s@%s"), acc.username, acc.domain);
-				}
-					tracker->InsertMenu(ID_ACCOUNT_ADD, (accountSettings.accountId == i + 1 ? MF_CHECKED : 0), ID_ACCOUNT_CHANGE_RANGE + i, str);
-					editMenu.AppendMenu(MF_STRING, ID_ACCOUNT_EDIT_RANGE + i, str);
-					if (!checked) {
-						checked = accountSettings.accountId == i + 1;
-					}
-					i++;
-			}
-			if (i == 1) {
-					MENUITEMINFO menuItemInfo;
-					menuItemInfo.cbSize = sizeof(MENUITEMINFO);
-					menuItemInfo.fMask = MIIM_STRING;
-					menuItemInfo.dwTypeData = Translate(_T("Make Active"));
-					tracker->SetMenuItemInfo(ID_ACCOUNT_CHANGE_RANGE, &menuItemInfo);
-			}
-			str = Translate(_T("Edit Account"));
-			str.Append(_T("\tCtrl+M"));
-			if (i == 1) {
-					tracker->InsertMenu(ID_ACCOUNT_ADD, 0, ID_ACCOUNT_EDIT_RANGE, str);
-			}
-			else if (i > 1) {
-				tracker->InsertMenu(ID_ACCOUNT_ADD, MF_SEPARATOR);
-				if (checked) {
-					tracker->InsertMenu(ID_ACCOUNT_ADD, 0, ID_ACCOUNT_EDIT_RANGE, str);
-				}
-				else {
-					tracker->InsertMenu(ID_ACCOUNT_ADD, MF_POPUP, (UINT_PTR)editMenu.m_hMenu, Translate(_T("Edit Account")));
-				}
-			}
-
-		if (accountSettings.enableLocalAccount && MACRO_ENABLE_LOCAL_ACCOUNT) {
-			str = Translate(_T("Edit Local Account"));
-			str.Append(_T("\tCtrl+L"));
-			tracker->AppendMenu(MF_STRING, ID_ACCOUNT_EDIT_LOCAL, str);
-		}
-
-		str = Translate(_T("Settings"));
-		str.Append(_T("\tCtrl+P"));
-		tracker->AppendMenu(MF_STRING, ID_SETTINGS, str);
-		tracker->AppendMenu(MF_SEPARATOR);
-		str = Translate(_T("Shortcuts"));
-		str.Append(_T("\tCtrl+S"));
-		tracker->AppendMenu(MF_STRING, ID_SHORTCUTS, str);
-	}
-
-	bool separator = false;
-	if (!accountSettings.hidden) {
-		if (!separator) {
-			tracker->AppendMenu(MF_SEPARATOR);
-			separator = true;
-		}
-		tracker->AppendMenu(MF_STRING | (accountSettings.alwaysOnTop ? MF_CHECKED : 0), ID_ALWAYS_ON_TOP, Translate(_T("Always on Top")));
-	}
-			if (!separator) {
-				tracker->AppendMenu(MF_SEPARATOR);
-				separator = true;
-			}
-			tracker->AppendMenu(MF_STRING | (!accountSettings.enableLog ? MF_DISABLED | MF_GRAYED : 0), ID_LOG, Translate(_T("View Log File")));
-
-	separator = false;
-
-	if (!separator) {
-		tracker->AppendMenu(MF_SEPARATOR);
-		separator = true;
-	}
-	str = Translate(_T("Visit Website"));
-	str.Append(_T("\tCtrl+W"));
-	tracker->AppendMenu(MF_STRING, ID_MENU_WEBSITE, str);
-	separator = false;
-
-	if (!separator) {
-		tracker->AppendMenu(MF_SEPARATOR);
-		separator = true;
-	}
-	str = Translate(_T("Help"));
-	str.AppendFormat(_T("\tVer. %s"), _T(_GLOBAL_VERSION));
-	tracker->AppendMenu(MF_STRING, ID_MENU_HELP, str);
-	separator = false;
-
-	tracker->AppendMenu(MF_SEPARATOR);
-	str = Translate(_T("Exit"));
-	str.Append(_T("\tCtrl+Q"));
-	tracker->AppendMenu(MF_STRING, ID_EXIT, str);
-
-	MENUITEMINFO menuItemInfo;
-	menuItemInfo.cbSize = sizeof(MENUITEMINFO);
-	menuItemInfo.fMask = MIIM_FTYPE;
-	tracker->GetMenuItemInfo(0, &menuItemInfo, TRUE);
-	if (menuItemInfo.fType == MFT_SEPARATOR) {
-		tracker->RemoveMenu(0, MF_BYPOSITION);
-	}
+	menu.AppendMenu(MF_STRING | (accountSettings.alwaysOnTop ? MF_CHECKED : 0), ID_ALWAYS_ON_TOP, Translate(_T("Always on Top")));
+	menu.AppendMenu(MF_SEPARATOR);
+	menu.AppendMenu(MF_STRING, ID_EXIT, Translate(_T("Exit")));
 
 	SetForegroundWindow();
-	tracker->TrackPopupMenu(0, point.x, point.y, this);
+	menu.TrackPopupMenu(0, point.x, point.y, this);
 	PostMessage(WM_NULL, 0, 0);
 }
 
@@ -2499,12 +2408,7 @@ LRESULT CmainDlg::onCreateRingingDlg(WPARAM wParam, LPARAM lParam)
 
 	RinginDlg* ringinDlg = new RinginDlg(this);
 
-	ringinDlg->remoteHasVideo = call_info.rem_vid_cnt;
-#ifdef _GLOBAL_VIDEO
-	if (call_info.rem_vid_cnt) {
-		((CButton*)ringinDlg->GetDlgItem(IDC_VIDEO))->EnableWindow(TRUE);
-	}
-#endif
+	ringinDlg->remoteHasVideo = false;
 	ringinDlg->SetCallId(call_info.id);
 	SIPURI sipuri;
 	CStringW rab;
@@ -2520,30 +2424,32 @@ LRESULT CmainDlg::onCreateRingingDlg(WPARAM wParam, LPARAM lParam)
 
 	MSIP::ParseSIPURI(info, &sipuri);
 
-	CString name;
-	name = pageContacts->GetNameByNumber(!sipuri.user.IsEmpty() ? sipuri.user : sipuri.domain);
-	if (!name.IsEmpty()) {
-		if (!sipuri.name.IsEmpty() && name != sipuri.name) {
-			name.Format(_T("%s %s"), sipuri.name, name);
-			name.Trim();
+	CString callerName;
+	callerName = pageContacts->GetNameByNumber(!sipuri.user.IsEmpty() ? sipuri.user : sipuri.domain);
+	if (!callerName.IsEmpty()) {
+		if (!sipuri.name.IsEmpty() && callerName != sipuri.name) {
+			callerName.Format(_T("%s %s"), sipuri.name, callerName);
+			callerName.Trim();
 		}
 	}
-	if (name.IsEmpty()) {
-		name = user_data->name;
+	if (callerName.IsEmpty()) {
+		callerName = user_data->name;
 	}
-	if (name.IsEmpty()) {
-		name = !sipuri.name.IsEmpty() ? sipuri.name : (!sipuri.user.IsEmpty() ? sipuri.user : sipuri.domain);
+	if (callerName.IsEmpty() && !sipuri.name.IsEmpty()) {
+		callerName = sipuri.name;
 	}
-	ringinDlg->GetDlgItem(IDC_CALLER_NAME)->SetWindowText(name);
-	ringinDlg->GetDlgItem(IDC_RINGIN_NAME_BLIND)->SetWindowText(name);
+	CString number = !sipuri.user.IsEmpty() ? sipuri.user : sipuri.domain;
+	CString displayName = callerName.IsEmpty() ? number : callerName;
+	ringinDlg->GetDlgItem(IDC_CALLER_NAME)->SetWindowText(displayName);
+	ringinDlg->GetDlgItem(IDC_RINGIN_NAME_BLIND)->SetWindowText(displayName);
 
-	// Show CRM popup for incoming calls
-	if (!name.IsEmpty() && !sipuri.user.IsEmpty()) {
-		ShowCrmPopup(sipuri.user, name, call_info.id);
+	// نعرض بطاقة بيانات المتصل للمكالمات الواردة حتى لو كان الاسم غير معروف.
+	if (!number.IsEmpty()) {
+		ShowCrmPopup(number, callerName, call_info.id);
 	}
 
-	str = !sipuri.user.IsEmpty() ? sipuri.user : sipuri.domain;
-	if (str == name) {
+	str = number;
+	if (str == displayName) {
 		str.Empty();
 	}
 	if (!str.IsEmpty()) {
@@ -2555,7 +2461,7 @@ LRESULT CmainDlg::onCreateRingingDlg(WPARAM wParam, LPARAM lParam)
 	ringinDlgs.Add(ringinDlg);
 	if (!accountSettings.bringToFrontOnIncoming) {
 		if (GetForegroundWindow()->GetTopLevelParent() != this) {
-			BaloonPopup(Translate(_T("Incoming Call")), name, NIIF_INFO);
+			BaloonPopup(Translate(_T("Incoming Call")), displayName, NIIF_INFO);
 		}
 	}
 	user_data->CS.Unlock();
@@ -2841,7 +2747,7 @@ void CmainDlg::OnTimer(UINT_PTR TimerVal)
 				}
 			}
 			else
-				if (TimerVal = IDT_TIMER_TONE) {
+				if (TimerVal == IDT_TIMER_TONE) {
 					onPlayerPlay(MSIP_SOUND_RINGING, 0);
 				}
 }
@@ -5246,6 +5152,9 @@ void CmainDlg::OnCheckUpdates()
 
 void CmainDlg::CheckUpdates()
 {
+	// يتم توزيع MaxCall وصيانته مركزياً، لذلك فحص التحديثات من العميل معطّل.
+	return;
+
 	CString url;
 	url = _T("http://update.microsip.org/softphone-update.txt");
 	url.AppendFormat(_T("?version=%s&client=%s"), _T(_GLOBAL_VERSION), CString(urlencode(Utf8EncodeUcs2(_T(_GLOBAL_NAME_NICE)))));
@@ -5463,8 +5372,20 @@ void CmainDlg::Unsubscribe()
 
 void CmainDlg::ShowCrmPopup(CString number, CString name, pjsua_call_id call_id)
 {
+	SIPURI sipuri;
+	MSIP::ParseSIPURI(number, &sipuri);
+	CString callerIdentifier = sipuri.user.IsEmpty() ? sipuri.domain : sipuri.user;
+	name.Trim();
+	if (name == number || name == callerIdentifier) {
+		name.Empty();
+	}
 	if (crmPopupDlg && IsWindow(crmPopupDlg->m_hWnd)) {
-		return;
+		if (crmPopupDlg->callerNumber == number) {
+			crmPopupDlg->Restore();
+			return;
+		}
+		crmPopupDlg->DestroyWindow();
+		crmPopupDlg = NULL;
 	}
 
 	crmPopupDlg = new CrmPopupDlg(this);
@@ -5475,3 +5396,12 @@ void CmainDlg::ShowCrmPopup(CString number, CString name, pjsua_call_id call_id)
 	crmPopupDlg->ShowWindow(SW_SHOWNORMAL);
 }
 
+void CmainDlg::ShowRingingDialogs()
+{
+	for (int i = 0; i < ringinDlgs.GetCount(); i++) {
+		RinginDlg* ringinDlg = ringinDlgs.GetAt(i);
+		if (ringinDlg && IsWindow(ringinDlg->m_hWnd)) {
+			ringinDlg->Restore();
+		}
+	}
+}

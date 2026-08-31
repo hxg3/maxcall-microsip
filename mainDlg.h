@@ -100,6 +100,7 @@ public:
 
 	int iconStatusbar;
 	CImageList* imageListStatus;
+	CImageList* imageListTabs;
 	int widthAdd;
 	int heightAdd;
 	bool missed;
@@ -169,6 +170,7 @@ public:
 	void UpdateSoundDevicesIds();
 	void PlayerStop();
 	void ShowCrmPopup(CString number, CString name, pjsua_call_id call_id);
+	void ShowRingingDialogs();
 #ifdef _GLOBAL_VIDEO
 	Preview* previewWin;
 	int VideoCaptureDeviceId(CString name=_T(""));
