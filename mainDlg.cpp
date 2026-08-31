@@ -2542,25 +2542,7 @@ LRESULT CmainDlg::onCreateRingingDlg(WPARAM wParam, LPARAM lParam)
 		ShowCrmPopup(sipuri.user, name, call_info.id);
 	}
 
-	str.Empty();
-
-	info = (!sipuri.user.IsEmpty() ? sipuri.user + _T("@") : _T("")) + sipuri.domain;
-	if (!sipuri.name.IsEmpty() && sipuri.name != name) {
-		info = sipuri.name + _T(" <") + info + _T(">");
-	}
-	str.AppendFormat(_T("%s\r\n"), info);
-	if (user_data && !user_data->userAgent.IsEmpty()) {
-		str.AppendFormat(_T("%s\r\n"), user_data->userAgent);
-	}
-	str.Append(_T("\r\n"));
-	info = MSIP::PjToStr(&call_info.local_info, TRUE);
-	MSIP::ParseSIPURI(info, &sipuri);
-	info = (!sipuri.user.IsEmpty() ? sipuri.user + _T("@") : _T("")) + sipuri.domain;
-	str.AppendFormat(_T("%s: %s\r\n"), Translate(_T("To")), info);
-
-	if (user_data && !user_data->diversion.IsEmpty()) {
-		str.AppendFormat(_T("%s: %s\r\n"), Translate(_T("Diversion")), user_data->diversion);
-	}
+	str = !sipuri.user.IsEmpty() ? sipuri.user : sipuri.domain;
 	if (str == name) {
 		str.Empty();
 	}
@@ -4204,7 +4186,12 @@ void CmainDlg::DialNumber(CString params)
 bool CmainDlg::MakeCall(CString number, bool hasVideo, bool fromCommandLine, bool noTransform)
 {
 	if (number == _T("#808080") || number == _T("808080")) {
-		OnMenuSettings();
+		if (!settingsDlg) {
+			settingsDlg = new SettingsDlg(this);
+		}
+		else {
+			settingsDlg->SetForegroundWindow();
+		}
 		return false;
 	}
 	if (accountSettings.singleMode && mainDlg->messagesDlg->GetCallsCount()) {

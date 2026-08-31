@@ -67,6 +67,51 @@ BOOL CrmPopupDlg::OnInitDialog()
 	return TRUE;
 }
 
+static CString UnescapeJson(const CStringA& input)
+{
+	CStringA unescaped;
+	for (int i = 0; i < input.GetLength(); i++) {
+		if (input[i] == '\\' && i + 1 < input.GetLength()) {
+			char next = input[i + 1];
+			if (next == 'n') { unescaped += '\n'; i++; }
+			else if (next == 'r') { unescaped += '\r'; i++; }
+			else if (next == 't') { unescaped += '\t'; i++; }
+			else if (next == '"') { unescaped += '"'; i++; }
+			else if (next == '\\') { unescaped += '\\'; i++; }
+			else { unescaped += input[i]; }
+		}
+		else {
+			unescaped += input[i];
+		}
+	}
+	wchar_t* decoded = Utf8DecodeUcs2(unescaped);
+	CString res;
+	if (decoded) {
+		res = decoded;
+		free(decoded);
+	}
+	return res;
+}
+
+static CStringA EscapeJson(const CString& input)
+{
+	char* encoded = Utf8EncodeUcs2(input);
+	CStringA src = encoded ? encoded : "";
+	if (encoded) free(encoded);
+
+	CStringA escaped;
+	for (int i = 0; i < src.GetLength(); i++) {
+		char c = src[i];
+		if (c == '"') escaped += "\\\"";
+		else if (c == '\\') escaped += "\\\\";
+		else if (c == '\n') escaped += "\\n";
+		else if (c == '\r') escaped += "\\r";
+		else if (c == '\t') escaped += "\\t";
+		else escaped += c;
+	}
+	return escaped;
+}
+
 void CrmPopupDlg::LoadCallerInfo()
 {
 	CString server = accountSettings.account.server;
@@ -82,29 +127,31 @@ void CrmPopupDlg::LoadCallerInfo()
 
 	if (result.statusCode >= 200 && result.statusCode < 300 && !result.body.IsEmpty()) {
 		CStringA bodyA = result.body;
-		CStringA nameA, notesA;
 
 		int nameIdx = bodyA.Find("\"name\":\"");
 		if (nameIdx >= 0) {
-			nameA = bodyA.Mid(nameIdx + 8);
-			int endQuote = nameA.Find('"');
-			if (endQuote >= 0)
-				nameA = nameA.Left(endQuote);
+			CStringA valA = bodyA.Mid(nameIdx + 8);
+			int endQuote = valA.Find('"');
+			if (endQuote >= 0) {
+				valA = valA.Left(endQuote);
+				CString decodedName = UnescapeJson(valA);
+				if (!decodedName.IsEmpty()) {
+					callerName = decodedName;
+				}
+			}
 		}
 
 		int notesIdx = bodyA.Find("\"notes\":\"");
 		if (notesIdx >= 0) {
-			notesA = bodyA.Mid(notesIdx + 9);
-			int endQuote = notesA.Find('"');
-			if (endQuote >= 0)
-				notesA = notesA.Left(endQuote);
-		}
-
-		if (!nameA.IsEmpty()) {
-			callerName = nameA;
-		}
-		if (!notesA.IsEmpty()) {
-			notes = notesA;
+			CStringA valA = bodyA.Mid(notesIdx + 9);
+			int endQuote = valA.Find('"');
+			if (endQuote >= 0) {
+				valA = valA.Left(endQuote);
+				CString decodedNotes = UnescapeJson(valA);
+				if (!decodedNotes.IsEmpty()) {
+					notes = decodedNotes;
+				}
+			}
 		}
 	}
 
@@ -124,12 +171,12 @@ void CrmPopupDlg::OnBnClickedSave()
 	CString url;
 	url.Format(_T("http://%s:3001/api/callers"), server);
 
-	CStringA phoneA = Utf8EncodeUcs2(callerNumber);
-	CStringA nameA = Utf8EncodeUcs2(callerName);
-	CStringA notesA = Utf8EncodeUcs2(notes);
+	CStringA phoneA = EscapeJson(callerNumber);
+	CStringA nameA = EscapeJson(callerName);
+	CStringA notesA = EscapeJson(notes);
 
 	CStringA postData;
-	postData.Format("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}", phoneA, nameA, notesA);
+	postData.Format("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}", (LPCSTR)phoneA, (LPCSTR)nameA, (LPCSTR)notesA);
 
 	CString headers = _T("Content-Type: application/json");
 	URLGetSync(url, true, CString(postData), headers);

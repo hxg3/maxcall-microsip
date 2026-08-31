@@ -100,8 +100,9 @@ void LoginDlg::OnBnClickedLogin()
 			accountSettings.account.authID = CString(extVal);
 			accountSettings.account.displayName = nameVal.IsEmpty() ? m_username : CString(nameVal);
 			accountSettings.account.domain = _T("192.168.1.165");
-			accountSettings.account.rememberPassword = true;
+			accountSettings.account.rememberPassword = false;
 			accountSettings.account.transport = _T("udp");
+			accountSettings.accountId = 1;
 
 			loginSuccess = true;
 			EndDialog(IDOK);

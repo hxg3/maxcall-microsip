@@ -190,26 +190,10 @@ void Calls::OnBnClickedOk()
 
 void Calls::DefaultItemAction(int i)
 {
-	if (accountSettings.defaultAction.IsEmpty()) {
-		if (accountSettings.singleMode) {
-			OnMenuCall();
-		}
-		else {
-			OnMenuChat();
-		}
-	}
-	else {
-		if (accountSettings.defaultAction == _T("call")) {
-			OnMenuCall();
-		}
-#ifdef _GLOBAL_VIDEO
-		else if (accountSettings.defaultAction == _T("video")) {
-			OnMenuCallVideo();
-		}
-#endif
-		else {
-			OnMenuChat();
-		}
+	CListCtrl* list = (CListCtrl*)GetDlgItem(IDC_CALLS);
+	Call* pCall = (Call*)list->GetItemData(i);
+	if (pCall && !pCall->number.IsEmpty()) {
+		mainDlg->ShowCrmPopup(pCall->number, pCall->name, PJSUA_INVALID_ID);
 	}
 }
 
@@ -880,52 +864,9 @@ void Calls::OnMenuViewDetails()
 	if (!pos) return;
 	int i = list->GetNextSelectedItem(pos);
 	Call* pCall = (Call*)list->GetItemData(i);
-
-	CString typeName;
-	switch (pCall->type) {
-	case MSIP_CALL_OUT: typeName = Translate(_T("Outgoing")); break;
-	case MSIP_CALL_IN: typeName = Translate(_T("Incoming")); break;
-	case MSIP_CALL_MISS: typeName = Translate(_T("Missed")); break;
-	default: typeName = Translate(_T("Other")); break;
+	if (pCall && !pCall->number.IsEmpty()) {
+		mainDlg->ShowCrmPopup(pCall->number, pCall->name, PJSUA_INVALID_ID);
 	}
-
-	CString timeStr = FormatTime(pCall->time);
-	CString durationStr = MSIP::GetDuration(pCall->duration);
-
-	CString details;
-	details.Format(
-		_T("Name: %s\nNumber: %s\nType: %s\nTime: %s\nDuration: %s\nInfo: %s"),
-		pCall->name.IsEmpty() ? _T("(unknown)") : pCall->name,
-		pCall->number,
-		typeName,
-		timeStr,
-		durationStr,
-		pCall->info.IsEmpty() ? _T("(none)") : pCall->info
-	);
-
-	if (pCall->name.IsEmpty() && !pCall->number.IsEmpty()) {
-		CString url;
-		url.Format(_T("http://192.168.1.165:3001/api/callers/%s"), pCall->number);
-		URLGetAsyncData result = URLGetSync(url);
-		if (result.statusCode == 200 && !result.body.IsEmpty()) {
-			Json::Value json;
-			Json::Reader reader;
-			CStringA bodyA(result.body);
-			if (reader.parse(bodyA.GetBuffer(), json)) {
-				CString apiName = CA2T(json.get("name", "").asCString());
-				if (!apiName.IsEmpty()) {
-					details += _T("\nAPI Name: ") + apiName;
-				}
-				Json::Value notes = json.get("notes", Json::nullValue);
-				if (!notes.isNull() && !notes.asString().empty()) {
-					CString noteStr = CA2T(notes.asCString());
-					details += _T("\nNotes: ") + noteStr;
-				}
-			}
-		}
-	}
-
-	AfxMessageBox(details, MB_OK | MB_ICONINFORMATION);
 }
 
 void Calls::OnMenuCallBack()
