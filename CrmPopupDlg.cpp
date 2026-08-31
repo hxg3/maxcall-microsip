@@ -84,11 +84,12 @@ static CString UnescapeJson(const CStringA& input)
 			unescaped += input[i];
 		}
 	}
-	wchar_t* decoded = Utf8DecodeUcs2(unescaped);
+	wchar_t* ucs2 = NULL;
+	Utf8DecodeCP(unescaped.GetBuffer(), CP_UTF8, &ucs2);
 	CString res;
-	if (decoded) {
-		res = decoded;
-		free(decoded);
+	if (ucs2) {
+		res = ucs2;
+		free(ucs2);
 	}
 	return res;
 }
