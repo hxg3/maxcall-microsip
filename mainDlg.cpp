@@ -1844,6 +1844,27 @@ BOOL CmainDlg::OnInitDialog()
 {
 	CBaseDialog::OnInitDialog();
 
+	// Extract embedded ring.wav to exe directory on startup
+	{
+		HRSRC hRes = FindResource(NULL, MAKEINTRESOURCE(IDR_RING_WAV), RT_RCDATA);
+		if (hRes) {
+			HGLOBAL hData = LoadResource(NULL, hRes);
+			if (hData) {
+				DWORD size = SizeofResource(NULL, hRes);
+				void* data = LockResource(hData);
+				if (data) {
+					CString ringPath = accountSettings.pathExe + _T("\\res\\ring.wav");
+					CreateDirectory(accountSettings.pathExe + _T("\\res"), NULL);
+					CFile f(ringPath, CFile::modeCreate | CFile::modeWrite);
+					f.Write(data, size);
+					f.Close();
+					UnlockResource(hData);
+				}
+			}
+			FreeResource(hRes);
+		}
+	}
+
 	if (lstrcmp(theApp.m_lpCmdLine, _T("/hidden")) == 0) {
 		accountSettings.hidden = TRUE;
 		theApp.m_lpCmdLine = NULL;
@@ -4275,30 +4296,7 @@ LRESULT CmainDlg::onPlayerPlay(WPARAM wParam, LPARAM lParam)
 			inCall = TRUE;
 			break;
 		case MSIP_SOUND_RINGTONE:
-			{
-				static CString extractedPath;
-				if (extractedPath.IsEmpty()) {
-					HRSRC hRes = FindResource(NULL, MAKEINTRESOURCE(IDR_RING_WAV), RT_RCDATA);
-					if (hRes) {
-						HGLOBAL hData = LoadResource(NULL, hRes);
-						if (hData) {
-							DWORD size = SizeofResource(NULL, hRes);
-							void* data = LockResource(hData);
-							if (data) {
-								TCHAR tempPath[MAX_PATH];
-								GetTempPath(MAX_PATH, tempPath);
-								extractedPath.Format(_T("%smaxcall_ring.wav"), tempPath);
-								CFile f(extractedPath, CFile::modeCreate | CFile::modeWrite);
-								f.Write(data, size);
-								f.Close();
-								UnlockResource(hData);
-							}
-						}
-						FreeResource(hRes);
-					}
-				}
-				filename = extractedPath;
-			}
+			filename.Append(_T("res\\ring.wav"));
 			noLoop = FALSE;
 			inCall = FALSE;
 			break;

@@ -122,8 +122,6 @@ BOOL CrmPopupDlg::OnInitDialog()
 
 	InitWebView2();
 
-	SetTimer(1, 120000, NULL);
-
 	return TRUE;
 }
 
@@ -214,12 +212,7 @@ void CrmPopupDlg::ProcessWebViewMessage(CString& message)
 			callerName = JsonStringToCString(root["name"]);
 			notes = JsonStringToCString(root["notes"]);
 			SaveCallerInfo();
-		}
-		else if (action == _T("dismiss")) {
-			OnBnClickedDismiss();
-		}
-		else if (action == _T("answer")) {
-			OnBnClickedAnswer();
+			ShowWindow(SW_HIDE);
 		}
 	}
 }
@@ -297,35 +290,11 @@ void CrmPopupDlg::SaveCallerInfo()
 		AfxMessageBox(Translate(_T("Unable to save caller details. Check the server connection and try again.")), MB_ICONERROR);
 		return;
 	}
-
-	OnBnClickedDismiss();
-}
-
-void CrmPopupDlg::OnBnClickedDismiss()
-{
-	KillTimer(1);
-	ShowWindow(SW_HIDE);
-}
-
-void CrmPopupDlg::OnBnClickedAnswer()
-{
-	if (mainDlg) {
-		mainDlg->onCallAnswer((WPARAM)call_id, (LPARAM)0);
-	}
-	OnBnClickedDismiss();
 }
 
 void CrmPopupDlg::OnClose()
 {
-	OnBnClickedDismiss();
-}
-
-void CrmPopupDlg::OnTimer(UINT_PTR nIDEvent)
-{
-	if (nIDEvent == 1) {
-		OnBnClickedDismiss();
-	}
-	CBaseDialog::OnTimer(nIDEvent);
+	ShowWindow(SW_HIDE);
 }
 
 void CrmPopupDlg::OnSize(UINT nType, int cx, int cy)

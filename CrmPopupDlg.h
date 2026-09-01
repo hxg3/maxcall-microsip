@@ -47,10 +47,7 @@ private:
 	void UpdateWebView();
 	void ProcessWebViewMessage(CString& message);
 	void SaveCallerInfo();
-	void OnBnClickedDismiss();
-	void OnBnClickedAnswer();
 	void OnClose();
-	void OnTimer(UINT_PTR nIDEvent);
 
 	static CString JsonStringToCString(const Json::Value& value);
 	static CString EscapeJson(const CString& input);
