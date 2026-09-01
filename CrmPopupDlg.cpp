@@ -141,9 +141,7 @@ HRESULT EnvCallback::Invoke(HRESULT result, ICoreWebView2Environment* env)
 		env->AddRef();
 
 		CtrlCallback* ctrlCb = new CtrlCallback(m_dlg);
-		RECT bounds;
-		m_dlg->GetClientRect(&bounds);
-		env->CreateCoreWebView2Controller(m_dlg->m_hWnd, ctrlCb, bounds);
+		env->CreateCoreWebView2Controller(m_dlg->m_hWnd, ctrlCb);
 		ctrlCb->Release();
 	}
 	return S_OK;
@@ -155,6 +153,10 @@ HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller
 	if (SUCCEEDED(result) && controller) {
 		m_dlg->m_controller = controller;
 		controller->AddRef();
+
+		RECT bounds;
+		m_dlg->GetClientRect(&bounds);
+		controller->put_Bounds(bounds);
 
 		ICoreWebView2* wv = nullptr;
 		controller->get_CoreWebView2(&wv);
