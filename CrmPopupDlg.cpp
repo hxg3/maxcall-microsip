@@ -8,7 +8,6 @@
 #include "json.h"
 
 #include "WebView2.h"
-#include "WebView2Environment.h"
 
 // Forward declare
 class CrmPopupDlg;
