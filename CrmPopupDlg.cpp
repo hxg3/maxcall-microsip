@@ -8,6 +8,7 @@
 #include "json.h"
 
 #include "WebView2.h"
+#include <dwmapi.h>
 
 // Forward declare
 class CrmPopupDlg;
@@ -110,7 +111,18 @@ BOOL CrmPopupDlg::OnInitDialog()
 
 	TranslateDialog(this->m_hWnd);
 
+	HICON hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	SetIcon(hIcon, TRUE);
+	SetIcon(hIcon, FALSE);
+
 	SetClassLongPtr(m_hWnd, GCLP_HBRBACKGROUND, (LONG_PTR)CreateSolidBrush(MAXCARE_SURFACE));
+
+	BOOL darkMode = TRUE;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+	COLORREF titleColor = MAXCARE_TEAL;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_CAPTION_COLOR, &titleColor, sizeof(titleColor));
+	COLORREF txtColor = MAXCARE_WHITE;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_TEXT_COLOR, &txtColor, sizeof(txtColor));
 
 	CRect screenRect;
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &screenRect, 0);

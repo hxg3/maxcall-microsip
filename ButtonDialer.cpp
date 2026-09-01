@@ -20,6 +20,7 @@
 #include "ButtonDialer.h"
 #include "Strsafe.h"
 #include "const.h"
+#include "define.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CButtonDialer
@@ -161,7 +162,7 @@ void CButtonDialer::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		// Do your text drawing
 		rtl.left += x12;
 		rtl.right -= x4;
-		crOldColor = dc.SetTextColor(RGB(127, 127, 127));
+		crOldColor = dc.SetTextColor(MAXCARE_TEXT_MUTED);
 		dc.DrawText(letters, rtl, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 		dc.SetTextColor(crOldColor);
 		// Always select the old font back into the DC
@@ -169,10 +170,10 @@ void CButtonDialer::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	}
 	else {
 		if (forceNumeric) {
-			crOldColor = dc.SetTextColor(RGB(80, 80, 80));
+			crOldColor = dc.SetTextColor(MAXCARE_TEXT);
 		}
 		else {
-			crOldColor = dc.SetTextColor(RGB(127, 127, 127));
+			crOldColor = dc.SetTextColor(MAXCARE_TEXT_MUTED);
 		}
 		dc.DrawText(strTemp, rt, DT_CENTER | DT_VCENTER | DT_SINGLELINE);		// Draw out the caption
 		dc.SetTextColor(crOldColor);

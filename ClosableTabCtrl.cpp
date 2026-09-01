@@ -2,6 +2,7 @@
 #include "mainDlg.h"
 #include "ClosableTabCtrl.h"
 #include "VisualStylesXP.h"
+#include "define.h"
 
 
 // _WIN32_WINNT >= 0x0501 (XP only)
@@ -322,16 +323,9 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 			rectFill.top = rect.top+1;
 			rectFill.right = rect.right-1;
 			rectFill.bottom = rect.bottom;
-			COLORREF clref = ::GetSysColor(COLOR_BTNFACE);
+			COLORREF clref = MAXCARE_SURFACE;
 			if (bSelected) {
-				BYTE r = GetRValue(clref);
-				BYTE g = GetGValue(clref);
-				BYTE b = GetBValue(clref);
-				if (r==g && g==b && b==255) {
-					clref = RGB(224, 224, 224);
-				} else {
-					clref = RGB(255, 255, 255);					
-				}
+				clref = MAXCARE_WHITE;
 			}
 			pDC->FillSolidRect(rectFill, clref);
 	}
@@ -382,9 +376,11 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 
 	COLORREF crOldColor = CLR_NONE;
 	if (tci.dwState & TCIS_HIGHLIGHTED)
-		crOldColor = pDC->SetTextColor(RGB(192, 0, 0));
+		crOldColor = pDC->SetTextColor(MAXCARE_ERROR);
+	else if (bSelected)
+		crOldColor = pDC->SetTextColor(MAXCARE_TEAL);
 	else if (bVistaHotTracked)
-		crOldColor = pDC->SetTextColor(GetSysColor(COLOR_BTNTEXT));
+		crOldColor = pDC->SetTextColor(MAXCARE_TEAL_DARK);
 
 	rect.top += bSelected ? 4 : 3;
 	// Vista: Tab control has troubles with determining the width of a tab if the

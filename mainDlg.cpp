@@ -28,6 +28,7 @@
 #include "utf.h"
 #include "json.h"
 #include "Markup.h"
+#include <dwmapi.h>
 #include "langpack.h"
 #include "jumplist.h"
 #include "atlenc.h"
@@ -1905,6 +1906,14 @@ BOOL CmainDlg::OnInitDialog()
 
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
+
+	// MaxCare teal title bar
+	BOOL darkMode = TRUE;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+	COLORREF titleColor = MAXCARE_TEAL;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_CAPTION_COLOR, &titleColor, sizeof(titleColor));
+	COLORREF txtColor = MAXCARE_WHITE;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_TEXT_COLOR, &txtColor, sizeof(txtColor));
 
 	// add tray icon or set tnd.hWnd = NULL;
 	ShowTrayIcon();
