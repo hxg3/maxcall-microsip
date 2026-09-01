@@ -360,8 +360,8 @@
     <None Include="res\embedded.rc2" />
     <None Include="res\main.rc2" />
     <None Include="res\menu.rc2" />
-    <None Include="crm_popup.bin" />
-    <None Include="ring_embed.bin" />
+    <None Include="res\crm_popup.bin" />
+    <None Include="res\ring_embed.bin" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="main.rc" />
