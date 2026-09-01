@@ -124,6 +124,16 @@ jobs:
         New-Item -ItemType Directory -Path "MaxCall" -Force | Out-Null
         Copy-Item $exe.FullName "MaxCall/MaxCall.exe" -Force
 
+        $wv2Dll = Get-ChildItem -Path "." -Recurse -Filter "WebView2Loader.dll" |
+          Where-Object { $_.FullName -notmatch "pjproject" } |
+          Select-Object -First 1
+        if ($wv2Dll) {
+          Copy-Item $wv2Dll.FullName "MaxCall/WebView2Loader.dll" -Force
+          Write-Host "Copied WebView2Loader.dll"
+        } else {
+          Write-Host "WARNING: WebView2Loader.dll not found"
+        }
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
@@ -138,6 +148,7 @@ jobs:
         name: MaxCall ${{ github.ref_name }}
         files: |
           MaxCall/MaxCall.exe
+          MaxCall/WebView2Loader.dll
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
