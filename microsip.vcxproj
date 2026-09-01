@@ -99,7 +99,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;NTDDI_VERSION=0x06010000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
@@ -131,7 +131,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;NTDDI_VERSION=0x06010000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
@@ -163,7 +163,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;NTDDI_VERSION=0x06010000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
@@ -195,7 +195,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;NTDDI_VERSION=0x06010000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

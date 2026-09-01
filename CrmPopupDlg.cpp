@@ -7,13 +7,65 @@
 #include "lib/utf.h"
 #include "json.h"
 
-// WebView2 headers (only in .cpp to avoid NTDDI_VERSION issues)
-#include <wrl.h>
-#include <wil/com.h>
 #include "WebView2.h"
 #include "WebView2Environment.h"
 
-using namespace Microsoft::WRL;
+// Forward declare
+class CrmPopupDlg;
+
+// WebView2 Environment callback
+class EnvCallback : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
+{
+public:
+	CrmPopupDlg* m_dlg;
+	ULONG m_refCount;
+
+	EnvCallback(CrmPopupDlg* dlg) : m_dlg(dlg), m_refCount(1) {}
+
+	ULONG STDMETHODCALLTYPE AddRef() override { return ++m_refCount; }
+	ULONG STDMETHODCALLTYPE Release() override {
+		ULONG count = --m_refCount;
+		if (count == 0) delete this;
+		return count;
+	}
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
+		if (riid == IID_IUnknown || riid == IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler) {
+			*ppv = static_cast<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler*>(this);
+			AddRef();
+			return S_OK;
+		}
+		*ppv = nullptr;
+		return E_NOINTERFACE;
+	}
+	HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Environment* env) override;
+};
+
+// WebView2 Controller callback
+class CtrlCallback : public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler
+{
+public:
+	CrmPopupDlg* m_dlg;
+	ULONG m_refCount;
+
+	CtrlCallback(CrmPopupDlg* dlg) : m_dlg(dlg), m_refCount(1) {}
+
+	ULONG STDMETHODCALLTYPE AddRef() override { return ++m_refCount; }
+	ULONG STDMETHODCALLTYPE Release() override {
+		ULONG count = --m_refCount;
+		if (count == 0) delete this;
+		return count;
+	}
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
+		if (riid == IID_IUnknown || riid == IID_ICoreWebView2CreateCoreWebView2ControllerCompletedHandler) {
+			*ppv = static_cast<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler*>(this);
+			AddRef();
+			return S_OK;
+		}
+		*ppv = nullptr;
+		return E_NOINTERFACE;
+	}
+	HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Controller* controller) override;
+};
 
 CrmPopupDlg::CrmPopupDlg(CWnd* pParent)
 	: CBaseDialog(CrmPopupDlg::IDD, pParent)
@@ -27,7 +79,7 @@ CrmPopupDlg::CrmPopupDlg(CWnd* pParent)
 CrmPopupDlg::~CrmPopupDlg(void)
 {
 	if (m_controller) {
-		auto ctrl = static_cast<ICoreWebView2Controller*>(m_controller);
+		ICoreWebView2Controller* ctrl = static_cast<ICoreWebView2Controller*>(m_controller);
 		ctrl->Close();
 		ctrl->Release();
 		m_controller = nullptr;
@@ -59,10 +111,8 @@ BOOL CrmPopupDlg::OnInitDialog()
 
 	TranslateDialog(this->m_hWnd);
 
-	// Set window background to MaxCare surface color
 	SetClassLongPtr(m_hWnd, GCLP_HBRBACKGROUND, (LONG_PTR)CreateSolidBrush(MAXCARE_SURFACE));
 
-	// Position at top-right of screen
 	CRect screenRect;
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &screenRect, 0);
 	CRect dlgRect;
@@ -71,7 +121,6 @@ BOOL CrmPopupDlg::OnInitDialog()
 	int y = screenRect.top + 20;
 	SetWindowPos(&wndTopMost, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
 
-	// Initialize WebView2
 	InitWebView2();
 
 	SetTimer(1, 120000, NULL);
@@ -81,54 +130,55 @@ BOOL CrmPopupDlg::OnInitDialog()
 
 void CrmPopupDlg::InitWebView2()
 {
-	// Create WebView2 environment
-	auto callback = Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>(
-		[this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
-			if (SUCCEEDED(result) && env) {
-				m_env = env;
-				env->AddRef();
-				// Create WebView2 controller
-				auto ctrlCallback = Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
-					[this](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
-						if (SUCCEEDED(result) && controller) {
-							m_controller = controller;
-							controller->AddRef();
-							ICoreWebView2* wv = nullptr;
-							controller->get_CoreWebView2(&wv);
-							if (wv) {
-								m_webView = wv;
-								// Navigate to the HTML file
-								CString htmlPath;
-								TCHAR modulePath[MAX_PATH];
-								GetModuleFileName(NULL, modulePath, MAX_PATH);
-								CString path(modulePath);
-								int pos = path.ReverseFind(_T('\\'));
-								if (pos >= 0) {
-									htmlPath = path.Left(pos + 1) + _T("crm_popup.html");
-								}
-								CStringW wPath(htmlPath);
-								wv->Navigate(wPath.GetString());
-							}
-						}
-						return S_OK;
-					});
-				RECT bounds;
-				GetClientRect(&bounds);
-				env->CreateCoreWebView2Controller(m_hWnd, ctrlCallback.Get(), bounds);
-			}
-			return S_OK;
-		});
+	EnvCallback* cb = new EnvCallback(this);
+	CreateCoreWebView2Environment(cb);
+}
 
-	ComPtr<ICoreWebView2EnvironmentFactory> factory;
-	HRESULT hr = GetWebView2Factory(&factory);
-	if (SUCCEEDED(hr) && factory) {
-		factory->CreateWebView2Environment(callback.Get());
+// EnvCallback implementation
+HRESULT EnvCallback::Invoke(HRESULT result, ICoreWebView2Environment* env)
+{
+	if (SUCCEEDED(result) && env) {
+		m_dlg->m_env = env;
+		env->AddRef();
+
+		CtrlCallback* ctrlCb = new CtrlCallback(m_dlg);
+		RECT bounds;
+		m_dlg->GetClientRect(&bounds);
+		env->CreateCoreWebView2Controller(m_dlg->m_hWnd, ctrlCb, bounds);
+		ctrlCb->Release();
 	}
+	return S_OK;
+}
+
+// CtrlCallback implementation
+HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller)
+{
+	if (SUCCEEDED(result) && controller) {
+		m_dlg->m_controller = controller;
+		controller->AddRef();
+
+		ICoreWebView2* wv = nullptr;
+		controller->get_CoreWebView2(&wv);
+		if (wv) {
+			m_dlg->m_webView = wv;
+
+			CString htmlPath;
+			TCHAR modulePath[MAX_PATH];
+			GetModuleFileName(NULL, modulePath, MAX_PATH);
+			CString path(modulePath);
+			int pos = path.ReverseFind(_T('\\'));
+			if (pos >= 0) {
+				htmlPath = path.Left(pos + 1) + _T("crm_popup.html");
+			}
+			CStringW wPath(htmlPath);
+			wv->Navigate(wPath.GetString());
+		}
+	}
+	return S_OK;
 }
 
 LRESULT CrmPopupDlg::OnWebViewReady(WPARAM wParam, LPARAM lParam)
 {
-	// WebView is ready, update with caller data
 	UpdateWebView();
 	return 0;
 }
@@ -145,7 +195,6 @@ LRESULT CrmPopupDlg::OnWebViewMessage(WPARAM wParam, LPARAM lParam)
 
 void CrmPopupDlg::ProcessWebViewMessage(CString& message)
 {
-	// Parse JSON message from JavaScript
 	Json::Value root;
 	Json::Reader reader;
 	std::string utf8 = CT2A(message, CP_UTF8);
@@ -199,7 +248,6 @@ void CrmPopupDlg::UpdateWebView()
 {
 	if (!m_webView) return;
 
-	// Escape strings for JavaScript
 	CString escapedNumber = EscapeJson(callerNumber);
 	CString escapedName = EscapeJson(callerName);
 	CString escapedNotes = EscapeJson(notes);
@@ -208,10 +256,9 @@ void CrmPopupDlg::UpdateWebView()
 	js.Format(_T("updateCallerInfo('%s', '%s', '%s', %d)"),
 		escapedNumber, escapedName, escapedNotes, call_id);
 
-	// Execute JavaScript
-	CStringW wJs(js);
 	ICoreWebView2* wv = static_cast<ICoreWebView2*>(m_webView);
 	if (wv) {
+		CStringW wJs(js);
 		wv->ExecuteScript(wJs.GetString(), nullptr);
 	}
 }
@@ -252,7 +299,6 @@ void CrmPopupDlg::OnBnClickedDismiss()
 
 void CrmPopupDlg::OnBnClickedAnswer()
 {
-	// Answer the call
 	if (mainDlg) {
 		mainDlg->onCallAnswer((WPARAM)call_id, (LPARAM)0);
 	}
@@ -290,7 +336,6 @@ void CrmPopupDlg::Restore()
 	SetTimer(1, 120000, NULL);
 }
 
-// Helper functions
 CString CrmPopupDlg::JsonStringToCString(const Json::Value& value)
 {
 	if (!value.isString()) {
