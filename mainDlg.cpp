@@ -4294,7 +4294,11 @@ LRESULT CmainDlg::onPlayerPlay(WPARAM wParam, LPARAM lParam)
 			inCall = FALSE;
 		}
 	}
-	if (filename.Find('\\') == -1 && filename.Find('/') == -1) {
+	if (filename.GetLength() >= 2 && filename[1] == ':') {
+	}
+	else if (filename.GetLength() >= 2 && filename[0] == '\\' && filename[1] == '\\') {
+	}
+	else {
 		filename = accountSettings.pathExe + _T("\\") + filename;
 	}
 	PlayerPlay(filename, noLoop, inCall);

@@ -76,7 +76,7 @@ void LoginDlg::OnBnClickedLogin()
 		(LPCTSTR)EscapeLoginJson(m_username),
 		(LPCTSTR)EscapeLoginJson(m_password));
 
-	CString url = _T("http://192.168.1.165:3001/api/agent/login");
+	CString url = _T("http://maxcare.local:3001/api/agent/login");
 	CString headers = _T("Content-Type: application/json");
 
 	URLGetAsyncData result = URLGetSync(url, true, jsonData, headers);
@@ -106,13 +106,13 @@ void LoginDlg::OnBnClickedLogin()
 			// الامتداد مؤقت لهذه الجلسة فقط؛ نحذف بيانات المستخدم السابق قبل التهيئة.
 			accountSettings.AccountDelete(1);
 
-			accountSettings.account.server = _T("192.168.1.165");
+			accountSettings.account.server = _T("maxcare.local");
 			accountSettings.account.port = 5060;
 			accountSettings.account.username = extVal;
 			accountSettings.account.password = m_password;
 			accountSettings.account.authID = extVal;
 			accountSettings.account.displayName = nameVal.IsEmpty() ? m_username : nameVal;
-			accountSettings.account.domain = _T("192.168.1.165");
+			accountSettings.account.domain = _T("maxcare.local");
 			accountSettings.account.rememberPassword = false;
 			accountSettings.account.transport = _T("udp");
 			accountSettings.accountId = 1;
