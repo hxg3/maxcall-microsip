@@ -103,16 +103,22 @@ void LoginDlg::OnBnClickedLogin()
 			Json::Value displayName = response["name"];
 			CString nameVal = displayName.isString() ? MSIP::Utf8DecodeUni(displayName.asCString()) : _T("");
 
+			// SIP server from API response (falls back to maxcare.local)
+			Json::Value sipServer = response["sip_server"];
+			CString sipServerVal = sipServer.isString() && !sipServer.asString().empty() 
+				? MSIP::Utf8DecodeUni(sipServer.asCString()) 
+				: _T("maxcare.local");
+
 			// الامتداد مؤقت لهذه الجلسة فقط؛ نحذف بيانات المستخدم السابق قبل التهيئة.
 			accountSettings.AccountDelete(1);
 
-			accountSettings.account.server = _T("maxcare.local");
+			accountSettings.account.server = sipServerVal;
 			accountSettings.account.port = 5060;
 			accountSettings.account.username = extVal;
 			accountSettings.account.password = m_password;
 			accountSettings.account.authID = extVal;
 			accountSettings.account.displayName = nameVal.IsEmpty() ? m_username : nameVal;
-			accountSettings.account.domain = _T("maxcare.local");
+			accountSettings.account.domain = sipServerVal;
 			accountSettings.account.rememberPassword = false;
 			accountSettings.account.transport = _T("udp");
 			accountSettings.accountId = 1;

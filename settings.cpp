@@ -274,6 +274,9 @@ void AccountSettings::Init()
 	ptr = ringtone.GetBuffer(255);
 	GetPrivateProfileString(section, _T("ringingSound"), NULL, ptr, 256, iniFile);
 	ringtone.ReleaseBuffer();
+	if (ringtone.IsEmpty()) {
+		ringtone = accountSettings.pathExe + _T("\\res\\ring.wav");
+	}
 
 	ptr = str.GetBuffer(255);
 	GetPrivateProfileString(section, _T("volumeRing"), NULL, ptr, 256, iniFile);

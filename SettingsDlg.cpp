@@ -76,7 +76,7 @@ BOOL SettingsDlg::OnInitDialog()
 
 	TranslateDialog(this->m_hWnd);
 
-	GetDlgItem(IDC_SETTINGS_RINGTONE)->SetWindowText(accountSettings.ringtone);
+	GetDlgItem(IDC_SETTINGS_RINGTONE)->SetWindowText(accountSettings.ringtone.IsEmpty() ? accountSettings.pathExe + _T("\\res\\ring.wav") : accountSettings.ringtone);
 	((CSliderCtrl*)GetDlgItem(IDC_SETTINGS_VOLUME_RING))->SetRange(0, 100);
 	((CSliderCtrl*)GetDlgItem(IDC_SETTINGS_VOLUME_RING))->SetPos(accountSettings.volumeRing);
 	GetDlgItem(IDC_SETTINGS_RECORDING)->SetWindowText(accountSettings.recordingPath);
