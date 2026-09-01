@@ -20,6 +20,15 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v2
+
+    - name: Restore NuGet Packages
+      shell: pwsh
+      run: |
+        nuget restore microsip.sln
+        Write-Host "NuGet packages restored"
+
     - name: Download and Prepare PJSIP
       shell: pwsh
       run: |
@@ -115,6 +124,7 @@ jobs:
         New-Item -ItemType Directory -Path "MaxCall/res" -Force | Out-Null
         Copy-Item $exe.FullName "MaxCall/MaxCall.exe" -Force
         Copy-Item "res/ring.wav" "MaxCall/res/ring.wav" -Force
+        Copy-Item "crm_popup.html" "MaxCall/crm_popup.html" -Force
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4

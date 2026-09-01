@@ -33,6 +33,7 @@ BEGIN_MESSAGE_MAP(CBaseDialog, CDialog)
 	//{{AFX_MSG_MAP(CBaseDialog)
 	ON_WM_GETMINMAXINFO()
 	ON_WM_SIZE()
+	ON_WM_CTLCOLOR()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -243,4 +244,27 @@ void CBaseDialog::OnSize(UINT nType, int cx, int cy)
 	if (hDefer != NULL)
 		EndDeferWindowPos(hDefer);
 
+}
+
+HBRUSH CBaseDialog::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+
+	// Apply MaxCare theme colors
+	if (nCtlColor == CTLCOLOR_DLG || nCtlColor == CTLCOLOR_STATIC)
+	{
+		pDC->SetBkColor(MAXCARE_SURFACE);
+		pDC->SetTextColor(MAXCARE_TEXT);
+		static CBrush br(MAXCARE_SURFACE);
+		return br;
+	}
+	else if (nCtlColor == CTLCOLOR_EDIT)
+	{
+		pDC->SetBkColor(MAXCARE_WHITE);
+		pDC->SetTextColor(MAXCARE_TEXT);
+		static CBrush brEdit(MAXCARE_WHITE);
+		return brEdit;
+	}
+
+	return hbr;
 }

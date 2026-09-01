@@ -3,6 +3,13 @@
 #include "resource.h"
 #include "BaseDialog.h"
 #include <pjsua-lib/pjsua.h>
+#include <wrl.h>
+#include <wil/com.h>
+#include "WebView2.h"
+#include "WebView2Environment.h"
+
+#define WM_WEBVIEW_READY (WM_USER + 100)
+#define WM_WEBVIEW_MESSAGE (WM_USER + 101)
 
 class CrmPopupDlg : public CBaseDialog
 {
@@ -15,8 +22,6 @@ public:
 	CString callerNumber;
 	CString callerName;
 	CString notes;
-	CFont m_fontName;
-	CFont m_fontLabel;
 
 	void LoadCallerInfo();
 	void Restore();
@@ -26,11 +31,28 @@ protected:
 	virtual BOOL OnInitDialog();
 	virtual void TabFocusSet() {}
 	virtual bool GotoTab(int i, CTabCtrl* tab = NULL) { return true; }
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg LRESULT OnWebViewReady(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnWebViewMessage(WPARAM wParam, LPARAM lParam);
 	DECLARE_MESSAGE_MAP()
 
-public:
-	afx_msg void OnBnClickedSave();
-	afx_msg void OnBnClickedDismiss();
-	afx_msg void OnClose();
-	afx_msg void OnTimer(UINT_PTR nIDEvent);
+private:
+	// WebView2
+	Microsoft::WRL::ComPtr<ICoreWebView2Controller> m_controller;
+	Microsoft::WRL::ComPtr<ICoreWebView2> m_webView;
+	Microsoft::WRL::ComPtr<ICoreWebView2Environment> m_env;
+
+	void InitWebView2();
+	void UpdateWebView();
+	void ProcessWebViewMessage(CString& message);
+	void SaveCallerInfo();
+	void OnBnClickedDismiss();
+	void OnBnClickedAnswer();
+	void OnClose();
+	void OnTimer(UINT_PTR nIDEvent);
+
+	// Helper functions
+	static CString JsonStringToCString(const Json::Value& value);
+	static CString EscapeJson(const CString& input);
+	static CString UrlEncodeCallerNumber(const CString& number);
 };
