@@ -332,6 +332,15 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 
 	int iOldBkMode = pDC->SetBkMode(TRANSPARENT);
 
+	if (bSelected) {
+		CPen penLine(PS_SOLID, 3, MAXCARE_TEAL);
+		CPen* pOldPen = pDC->SelectObject(&penLine);
+		int lineY = rcFullItem.bottom - 1;
+		pDC->MoveTo(rcFullItem.left + 2, lineY);
+		pDC->LineTo(rcFullItem.right - 2, lineY);
+		pDC->SelectObject(pOldPen);
+	}
+
 	// Draw image on left side
 	CImageList *piml = GetImageList();
 	if (tci.iImage >= 0 && piml && piml->m_hImageList)

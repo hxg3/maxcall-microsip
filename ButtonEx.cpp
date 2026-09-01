@@ -18,8 +18,8 @@
 
 #include "StdAfx.h"   
 #include "ButtonEx.h"   
+#include "define.h"
 
-// CButtonEx   
 IMPLEMENT_DYNAMIC(CButtonEx, CMFCButton)
 CButtonEx::CButtonEx()   
 {   
@@ -32,8 +32,6 @@ CButtonEx::~CButtonEx()
 }
 
 BEGIN_MESSAGE_MAP(CButtonEx, CMFCButton)   
-    //{{AFX_MSG_MAP(CButtonEx)
-    //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
 BOOL CButtonEx::EnableWindow(BOOL bEnable)
@@ -43,9 +41,8 @@ BOOL CButtonEx::EnableWindow(BOOL bEnable)
 		SetFaceColor(m_FaceColor, true);
 	}
 	else {
-//		SetTextColor(RGB(123, 123, 123));
-		SetTextColor(RGB(0, 0, 0));
-		SetFaceColor(RGB(222, 222, 222), true);
+		SetTextColor(MAXCARE_TEXT_MUTED);
+		SetFaceColor(MAXCARE_BORDER, true);
 	}
 	return CMFCButton::EnableWindow(bEnable);
 }

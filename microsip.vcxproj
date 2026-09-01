@@ -240,6 +240,7 @@
     <ClCompile Include="IconButton.cpp" />
     <ClCompile Include="jumplist.cpp" />
     <ClCompile Include="LoginDlg.cpp" />
+    <ClCompile Include="SplashScreen.cpp" />
     <ClCompile Include="lib\CListCtrl_ToolTip.cpp" />
     <ClCompile Include="lib\CMask.cpp" />
     <ClCompile Include="lib\Crypto.cpp" />
@@ -317,6 +318,7 @@
     <ClInclude Include="mainDlg.h" />
     <ClInclude Include="MessagesDlg.h" />
     <ClInclude Include="microsip.h" />
+    <ClInclude Include="SplashScreen.h" />
     <ClInclude Include="MMNotificationClient.h" />
     <ClInclude Include="Preview.h" />
     <ClInclude Include="Resource.h" />

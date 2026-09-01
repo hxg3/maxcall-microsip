@@ -7,6 +7,8 @@
 #include "microsip.h"
 #include "lib/utf.h"
 #include "json.h"
+#include "define.h"
+#include <dwmapi.h>
 
 static CString EscapeLoginJson(const CString& value)
 {
@@ -49,8 +51,16 @@ BOOL LoginDlg::OnInitDialog()
 
 	TranslateDialog(this->m_hWnd);
 
-	SetIcon(theApp.LoadIcon(IDR_MAINFRAME), TRUE);
-	SetIcon(theApp.LoadIcon(IDR_MAINFRAME), FALSE);
+	HICON hIcon = theApp.LoadIcon(IDR_MAINFRAME);
+	SetIcon(hIcon, TRUE);
+	SetIcon(hIcon, FALSE);
+
+	BOOL darkMode = TRUE;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+	COLORREF titleColor = MAXCARE_TEAL;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_CAPTION_COLOR, &titleColor, sizeof(titleColor));
+	COLORREF txtColor = MAXCARE_WHITE;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_TEXT_COLOR, &txtColor, sizeof(txtColor));
 
 	m_username = _T("");
 	m_password = _T("");

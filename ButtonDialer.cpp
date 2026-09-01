@@ -21,13 +21,15 @@
 #include "Strsafe.h"
 #include "const.h"
 #include "define.h"
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus.lib")
 
-/////////////////////////////////////////////////////////////////////////////
-// CButtonDialer
+using namespace Gdiplus;
 
 CButtonDialer::CButtonDialer()
 {
 	forceNumeric = false;
+	m_bHover = false;
 	m_map.SetAt(_T("1"), _T(""));
 	m_map.SetAt(_T("2"), _T("ABC"));
 	m_map.SetAt(_T("3"), _T("DEF"));
@@ -47,15 +49,12 @@ CButtonDialer::~CButtonDialer()
 	CloseTheme();
 }
 
-
 BEGIN_MESSAGE_MAP(CButtonDialer, CButton)
 	ON_WM_THEMECHANGED()
 	ON_WM_MOUSEMOVE()
+	ON_WM_MOUSELEAVE()
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
-
-/////////////////////////////////////////////////////////////////////////////
-// CButtonDialer message handlers
 
 void CButtonDialer::PreSubclassWindow()
 {
@@ -64,7 +63,8 @@ void CButtonDialer::PreSubclassWindow()
 	HFONT hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 	LOGFONT lf;
 	GetObject(hFont, sizeof(LOGFONT), &lf);
-	lf.lfHeight = 12;
+	lf.lfHeight = 10;
+	lf.lfWeight = FW_NORMAL;
 	CDC *pDC = GetDC();
 	if (pDC) {
 		dpiX = GetDeviceCaps(pDC->m_hDC, LOGPIXELSX);
@@ -75,7 +75,7 @@ void CButtonDialer::PreSubclassWindow()
 	else {
 		dpiX = dpiY = 96;
 	}
-	StringCchCopy(lf.lfFaceName, LF_FACESIZE, _T("Microsoft Sans Serif"));
+	StringCchCopy(lf.lfFaceName, LF_FACESIZE, _T("Segoe UI"));
 	m_FontLetters.CreateFontIndirect(&lf);
 
 	DWORD dwStyle = ::GetClassLong(m_hWnd, GCL_STYLE);
@@ -97,96 +97,116 @@ void CButtonDialer::OnSize(UINT type, int w, int h)
 
 void CButtonDialer::OnMouseMove(UINT nFlags, CPoint point)
 {
-	CRect rect;
-	GetClientRect(&rect);
-	if (rect.PtInRect(point)) {
-		if (GetCapture() != this) {
-			SetCapture();
-			Invalidate();
-		}
-	}
-	else {
-		ReleaseCapture();
+	if (!m_bHover) {
+		m_bHover = true;
+		TRACKMOUSEEVENT tme;
+		tme.cbSize = sizeof(tme);
+		tme.dwFlags = TME_LEAVE;
+		tme.hwndTrack = m_hWnd;
+		_TrackMouseEvent(&tme);
 		Invalidate();
 	}
 	CButton::OnMouseMove(nFlags, point);
 }
 
+void CButtonDialer::OnMouseLeave()
+{
+	m_bHover = false;
+	Invalidate();
+	CButton::OnMouseLeave();
+}
+
+static GraphicsPath* CreateRoundedRect(Rect rect, INT radius)
+{
+	GraphicsPath* path = new GraphicsPath();
+	int d = radius * 2;
+	path->AddArc(rect.X, rect.Y, d, d, 180, 90);
+	path->AddArc(rect.X + rect.Width - d, rect.Y, d, d, 270, 90);
+	path->AddArc(rect.X + rect.Width - d, rect.Y + rect.Height - d, d, d, 0, 90);
+	path->AddArc(rect.X, rect.Y + rect.Height - d, d, d, 90, 90);
+	path->CloseFigure();
+	return path;
+}
+
 void CButtonDialer::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	CDC dc;
-	dc.Attach(lpDrawItemStruct->hDC);		//Get device context object
-	CRect rt;
-	rt = lpDrawItemStruct->rcItem;		//Get button rect
-	dc.FillSolidRect(rt, dc.GetBkColor());
-	dc.SetBkMode(TRANSPARENT);
+	dc.Attach(lpDrawItemStruct->hDC);
+	CRect rt(lpDrawItemStruct->rcItem);
+	UINT state = lpDrawItemStruct->itemState;
+	bool bPressed = (state & ODS_SELECTED) != 0;
+	bool bFocused = (state & ODS_FOCUS) != 0;
 
-	CRect rtl = rt;
-	UINT state = lpDrawItemStruct->itemState;	//Get state of the button
+	GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-	if (!m_hTheme) {
-		UINT uStyle = DFCS_BUTTONPUSH;
-		if ((state & ODS_SELECTED)) {
-			uStyle |= DFCS_PUSHED;
-			rtl.left += 1;
-			rtl.top += 1;
+	{
+		Graphics graphics(dc.m_hDC);
+		graphics.SetSmoothingMode(SmoothingModeAntiAlias);
+		graphics.SetTextRenderingHint(TextRenderingHintAntiAliasGridFit);
+
+		Rect rect(rt.left, rt.top, rt.Width(), rt.Height());
+		GraphicsPath* path = CreateRoundedRect(rect, 6);
+
+		if (bPressed) {
+			SolidBrush brushPressed(MAXCARE_TEAL_DARK);
+			graphics.FillPath(&brushPressed, path);
 		}
-		dc.DrawFrameControl(rt, DFC_BUTTON, uStyle);
-	}
-	else {
-		UINT uStyleTheme = RBS_NORMAL;
-		if ((state & ODS_SELECTED)) {
-			uStyleTheme = PBS_PRESSED;
-		}
-		else if (GetCapture() == this) {
-			uStyleTheme = PBS_HOT;
-		}
-		DrawThemeBackground(m_hTheme, dc.m_hDC,
-			BP_PUSHBUTTON, uStyleTheme,
-			rt, NULL);
-	}
-
-	CString strTemp;
-	GetWindowText(strTemp);		// Get the caption which have been set
-
-	int x12 = MulDiv(12, dpiX, 96);
-	int x14 = MulDiv(14, dpiX, 96);
-	int x4 = MulDiv(4, dpiX, 96);
-
-	CString letters;
-	COLORREF crOldColor;
-	if (!forceNumeric && m_map.Lookup(strTemp, letters)) {
-		rtl.left += x14;
-		dc.DrawText(strTemp, rtl, DT_LEFT | DT_VCENTER | DT_SINGLELINE);		// Draw out the caption
-		HFONT hOldFont = (HFONT)SelectObject(dc.m_hDC, m_FontLetters);
-		// Do your text drawing
-		rtl.left += x12;
-		rtl.right -= x4;
-		crOldColor = dc.SetTextColor(MAXCARE_TEXT_MUTED);
-		dc.DrawText(letters, rtl, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-		dc.SetTextColor(crOldColor);
-		// Always select the old font back into the DC
-		SelectObject(dc.m_hDC, hOldFont);
-	}
-	else {
-		if (forceNumeric) {
-			crOldColor = dc.SetTextColor(MAXCARE_TEXT);
+		else if (m_bHover) {
+			SolidBrush brushHover(MAXCARE_TEAL_SOFT);
+			graphics.FillPath(&brushHover, path);
 		}
 		else {
-			crOldColor = dc.SetTextColor(MAXCARE_TEXT_MUTED);
+			SolidBrush brushNormal(MAXCARE_WHITE);
+			graphics.FillPath(&brushNormal, path);
 		}
-		dc.DrawText(strTemp, rt, DT_CENTER | DT_VCENTER | DT_SINGLELINE);		// Draw out the caption
-		dc.SetTextColor(crOldColor);
+
+		Pen penBorder(MAXCARE_BORDER, 1);
+		graphics.DrawPath(&penBorder, path);
+
+		delete path;
+
+		CString strTemp;
+		GetWindowText(strTemp);
+
+		CString letters;
+		COLORREF textColor;
+
+		if (!forceNumeric && m_map.Lookup(strTemp, letters)) {
+			if (bPressed) {
+				textColor = MAXCARE_WHITE;
+			}
+			else {
+				textColor = MAXCARE_TEXT;
+			}
+			dc.SetTextColor(textColor);
+			dc.SetBkMode(TRANSPARENT);
+
+			CRect rtl(rt);
+			rtl.left += MulDiv(10, dpiX, 96);
+			dc.DrawText(strTemp, rtl, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+
+			HFONT hOldFont = (HFONT)SelectObject(dc.m_hDC, m_FontLetters);
+			rtl.left += MulDiv(12, dpiX, 96);
+			rtl.right -= MulDiv(4, dpiX, 96);
+			dc.SetTextColor(bPressed ? RGB(221, 242, 240) : MAXCARE_TEXT_MUTED);
+			dc.DrawText(letters, rtl, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+			SelectObject(dc.m_hDC, hOldFont);
+		}
+		else {
+			if (forceNumeric) {
+				textColor = bPressed ? MAXCARE_WHITE : MAXCARE_TEXT;
+			}
+			else {
+				textColor = bPressed ? MAXCARE_WHITE : MAXCARE_TEXT_MUTED;
+			}
+			dc.SetTextColor(textColor);
+			dc.SetBkMode(TRANSPARENT);
+			dc.DrawText(strTemp, rt, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+		}
 	}
 
-	if ((state & ODS_FOCUS))       // If the button is focused
-	{
-		int iChange = 3;
-		rt.top += iChange;
-		rt.left += iChange;
-		rt.right -= iChange;
-		rt.bottom -= iChange;
-		dc.DrawFocusRect(rt);
-	}
+	GdiplusShutdown(gdiplusToken);
 	dc.Detach();
 }
