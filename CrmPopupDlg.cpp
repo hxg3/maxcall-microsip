@@ -6,9 +6,10 @@
 #include "global.h"
 #include "lib/utf.h"
 #include "json.h"
+
+// WebView2 headers (only in .cpp to avoid NTDDI_VERSION issues)
 #include <wrl.h>
 #include <wil/com.h>
-#include <wil/result_macros.h>
 #include "WebView2.h"
 #include "WebView2Environment.h"
 
@@ -18,15 +19,26 @@ CrmPopupDlg::CrmPopupDlg(CWnd* pParent)
 	: CBaseDialog(CrmPopupDlg::IDD, pParent)
 {
 	call_id = PJSUA_INVALID_ID;
+	m_controller = nullptr;
 	m_webView = nullptr;
 	m_env = nullptr;
 }
 
 CrmPopupDlg::~CrmPopupDlg(void)
 {
+	if (m_controller) {
+		auto ctrl = static_cast<ICoreWebView2Controller*>(m_controller);
+		ctrl->Close();
+		ctrl->Release();
+		m_controller = nullptr;
+	}
 	if (m_webView) {
-		m_webView->Close();
+		static_cast<ICoreWebView2*>(m_webView)->Release();
 		m_webView = nullptr;
+	}
+	if (m_env) {
+		static_cast<ICoreWebView2Environment*>(m_env)->Release();
+		m_env = nullptr;
 	}
 }
 
@@ -74,16 +86,28 @@ void CrmPopupDlg::InitWebView2()
 		[this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
 			if (SUCCEEDED(result) && env) {
 				m_env = env;
+				env->AddRef();
 				// Create WebView2 controller
 				auto ctrlCallback = Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
 					[this](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
 						if (SUCCEEDED(result) && controller) {
 							m_controller = controller;
-							m_controller->get_CoreWebView2(&m_webView);
-							if (m_webView) {
-								// Add script to listen for messages
-								m_webView->AddHostObjectToScript(L"crmBridge", this);
-								m_webView->Navigate(L"about:blank");
+							controller->AddRef();
+							ICoreWebView2* wv = nullptr;
+							controller->get_CoreWebView2(&wv);
+							if (wv) {
+								m_webView = wv;
+								// Navigate to the HTML file
+								CString htmlPath;
+								TCHAR modulePath[MAX_PATH];
+								GetModuleFileName(NULL, modulePath, MAX_PATH);
+								CString path(modulePath);
+								int pos = path.ReverseFind(_T('\\'));
+								if (pos >= 0) {
+									htmlPath = path.Left(pos + 1) + _T("crm_popup.html");
+								}
+								CStringW wPath(htmlPath);
+								wv->Navigate(wPath.GetString());
 							}
 						}
 						return S_OK;
@@ -95,26 +119,17 @@ void CrmPopupDlg::InitWebView2()
 			return S_OK;
 		});
 
-	.CreateCoreWebView2Environment(nullptr, nullptr, nullptr, callback.Get());
+	ComPtr<ICoreWebView2EnvironmentFactory> factory;
+	HRESULT hr = GetWebView2Factory(&factory);
+	if (SUCCEEDED(hr) && factory) {
+		factory->CreateWebView2Environment(callback.Get());
+	}
 }
 
 LRESULT CrmPopupDlg::OnWebViewReady(WPARAM wParam, LPARAM lParam)
 {
-	if (m_webView) {
-		// Navigate to the HTML file
-		CString htmlPath;
-		TCHAR modulePath[MAX_PATH];
-		GetModuleFileName(NULL, modulePath, MAX_PATH);
-		CString path(modulePath);
-		int pos = path.ReverseFind(_T('\\'));
-		if (pos >= 0) {
-			htmlPath = path.Left(pos + 1) + _T("crm_popup.html");
-		}
-
-		// Convert to wide string
-		CStringW wPath(htmlPath);
-		m_webView->Navigate(wPath.GetString());
-	}
+	// WebView is ready, update with caller data
+	UpdateWebView();
 	return 0;
 }
 
@@ -195,7 +210,10 @@ void CrmPopupDlg::UpdateWebView()
 
 	// Execute JavaScript
 	CStringW wJs(js);
-	m_webView->ExecuteScript(wJs.GetString(), nullptr);
+	ICoreWebView2* wv = static_cast<ICoreWebView2*>(m_webView);
+	if (wv) {
+		wv->ExecuteScript(wJs.GetString(), nullptr);
+	}
 }
 
 void CrmPopupDlg::SaveCallerInfo()
@@ -258,9 +276,10 @@ void CrmPopupDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CBaseDialog::OnSize(nType, cx, cy);
 	if (m_controller) {
+		ICoreWebView2Controller* ctrl = static_cast<ICoreWebView2Controller*>(m_controller);
 		RECT bounds;
 		GetClientRect(&bounds);
-		m_controller->put_Bounds(bounds);
+		ctrl->put_Bounds(bounds);
 	}
 }
 

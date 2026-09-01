@@ -3,10 +3,11 @@
 #include "resource.h"
 #include "BaseDialog.h"
 #include <pjsua-lib/pjsua.h>
-#include <wrl.h>
-#include <wil/com.h>
-#include "WebView2.h"
-#include "WebView2Environment.h"
+
+// Forward declarations for WebView2
+struct ICoreWebView2Controller;
+struct ICoreWebView2;
+struct ICoreWebView2Environment;
 
 #define WM_WEBVIEW_READY (WM_USER + 100)
 #define WM_WEBVIEW_MESSAGE (WM_USER + 101)
@@ -37,10 +38,10 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 private:
-	// WebView2
-	Microsoft::WRL::ComPtr<ICoreWebView2Controller> m_controller;
-	Microsoft::WRL::ComPtr<ICoreWebView2> m_webView;
-	Microsoft::WRL::ComPtr<ICoreWebView2Environment> m_env;
+	// WebView2 (using void* to avoid header dependency)
+	void* m_controller;
+	void* m_webView;
+	void* m_env;
 
 	void InitWebView2();
 	void UpdateWebView();
