@@ -4275,7 +4275,30 @@ LRESULT CmainDlg::onPlayerPlay(WPARAM wParam, LPARAM lParam)
 			inCall = TRUE;
 			break;
 		case MSIP_SOUND_RINGTONE:
-			filename.Append(_T("res\\ring.wav"));
+			{
+				static CString extractedPath;
+				if (extractedPath.IsEmpty()) {
+					HRSRC hRes = FindResource(NULL, MAKEINTRESOURCE(IDR_RING_WAV), RT_RCDATA);
+					if (hRes) {
+						HGLOBAL hData = LoadResource(NULL, hRes);
+						if (hData) {
+							DWORD size = SizeofResource(NULL, hRes);
+							void* data = LockResource(hData);
+							if (data) {
+								TCHAR tempPath[MAX_PATH];
+								GetTempPath(MAX_PATH, tempPath);
+								extractedPath.Format(_T("%smaxcall_ring.wav"), tempPath);
+								CFile f(extractedPath, CFile::modeCreate | CFile::modeWrite);
+								f.Write(data, size);
+								f.Close();
+								UnlockResource(hData);
+							}
+						}
+						FreeResource(hRes);
+					}
+				}
+				filename = extractedPath;
+			}
 			noLoop = FALSE;
 			inCall = FALSE;
 			break;

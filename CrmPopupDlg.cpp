@@ -163,16 +163,25 @@ HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller
 		if (wv) {
 			m_dlg->m_webView = wv;
 
-			CString htmlPath;
-			TCHAR modulePath[MAX_PATH];
-			GetModuleFileName(NULL, modulePath, MAX_PATH);
-			CString path(modulePath);
-			int pos = path.ReverseFind(_T('\\'));
-			if (pos >= 0) {
-				htmlPath = path.Left(pos + 1) + _T("crm_popup.html");
+			HRSRC hRes = FindResource(NULL, MAKEINTRESOURCE(IDR_CRM_POPUP_HTML), RT_RCDATA);
+			if (hRes) {
+				HGLOBAL hData = LoadResource(NULL, hRes);
+				if (hData) {
+					DWORD size = SizeofResource(NULL, hRes);
+					char* data = (char*)LockResource(hData);
+					if (data) {
+						int wideLen = MultiByteToWideChar(CP_UTF8, 0, data, size, NULL, 0);
+						if (wideLen > 0) {
+							CStringW htmlStr;
+							MultiByteToWideChar(CP_UTF8, 0, data, size, htmlStr.GetBuffer(wideLen), wideLen);
+							htmlStr.ReleaseBuffer(wideLen);
+							wv->NavigateToString(htmlStr.GetString());
+						}
+						UnlockResource(hData);
+					}
+				}
+				FreeResource(hRes);
 			}
-			CStringW wPath(htmlPath);
-			wv->Navigate(wPath.GetString());
 		}
 	}
 	return S_OK;

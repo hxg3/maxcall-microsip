@@ -124,7 +124,6 @@ jobs:
         New-Item -ItemType Directory -Path "MaxCall/res" -Force | Out-Null
         Copy-Item $exe.FullName "MaxCall/MaxCall.exe" -Force
         Copy-Item "res/ring.wav" "MaxCall/res/ring.wav" -Force
-        Copy-Item "crm_popup.html" "MaxCall/crm_popup.html" -Force
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -140,8 +139,6 @@ jobs:
         name: MaxCall ${{ github.ref_name }}
         files: |
           MaxCall/MaxCall.exe
-          MaxCall/res/ring.wav
-          MaxCall/crm_popup.html
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

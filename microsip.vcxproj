@@ -275,9 +275,6 @@
     <ClCompile Include="Transfer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="crm_popup.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="res\ring.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -360,8 +357,11 @@
   <ItemGroup>
     <None Include="installer\msi\lite\Vocalsip.vdproj" />
     <None Include="res\dialog.rc2" />
+    <None Include="res\embedded.rc2" />
     <None Include="res\main.rc2" />
     <None Include="res\menu.rc2" />
+    <None Include="crm_popup.bin" />
+    <None Include="ring_embed.bin" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="main.rc" />

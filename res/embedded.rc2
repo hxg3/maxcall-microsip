@@ -1,0 +1,5 @@
+// Embedded resources (binary data)
+#include "resource.h"
+
+IDR_CRM_POPUP_HTML RCDATA "res\\crm_popup.bin"
+IDR_RING_WAV RCDATA "res\\ring_embed.bin"

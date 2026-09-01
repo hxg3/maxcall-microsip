@@ -48,6 +48,7 @@ BEGIN
     "#include ""res\\main.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
     "#include ""res\\dialog.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
     "#include ""res\\menu.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""res\\embedded.rc2""  // Embedded binary resources\r\n"
     "#include ""afxres.rc""     // Standard components\r\n"
     "#endif\r\n"
     "\0"
@@ -81,6 +82,7 @@ LANGUAGE 9, 1
 #include "res\main.rc2"  // non-Microsoft Visual C++ edited resources
 #include "res\dialog.rc2"  // non-Microsoft Visual C++ edited resources
 #include "res\menu.rc2"  // non-Microsoft Visual C++ edited resources
+#include "res\embedded.rc2"  // Embedded binary resources
 #include "afxres.rc"     // Standard components
 #endif
 
