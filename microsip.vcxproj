@@ -98,7 +98,7 @@
       <ValidateAllParameters>true</ValidateAllParameters>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2739.15\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -113,7 +113,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>Wtsapi32.lib;Microsoft.Web.WebView2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>lib\;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\x86\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>lib\;packages\Microsoft.Web.WebView2.1.0.2739.15\build\native\x86\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <AdditionalOptions>/OPT:NOLBR %(AdditionalOptions)</AdditionalOptions>
@@ -130,7 +130,7 @@
       <MkTypLibCompatible>false</MkTypLibCompatible>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2739.15\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -145,7 +145,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>Wtsapi32.lib;Microsoft.Web.WebView2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>lib\;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>lib\;packages\Microsoft.Web.WebView2.1.0.2739.15\build\native\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <AdditionalOptions>/OPT:NOLBR %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -162,7 +162,7 @@
       <ValidateAllParameters>true</ValidateAllParameters>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2739.15\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -175,7 +175,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>Wtsapi32.lib;Microsoft.Web.WebView2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>lib\;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\x86\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>lib\;packages\Microsoft.Web.WebView2.1.0.2739.15\build\native\x86\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <SubSystem>Windows</SubSystem>
@@ -194,7 +194,7 @@
       <MkTypLibCompatible>false</MkTypLibCompatible>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>lib;lib\jsoncpp\json;pjlib\include;pjsip\include;pjmedia\include;pjnath\include;pjlib-util\include;.;packages\Microsoft.Web.WebView2.1.0.2739.15\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -207,7 +207,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>Wtsapi32.lib;Microsoft.Web.WebView2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>lib\;packages\Microsoft.Web.WebView2.1.0.2903.40\build\native\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>lib\;packages\Microsoft.Web.WebView2.1.0.2739.15\build\native\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <SubSystem>Windows</SubSystem>

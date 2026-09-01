@@ -3,8 +3,8 @@
 #include "resource.h"
 #include "BaseDialog.h"
 #include <pjsua-lib/pjsua.h>
+#include "json.h"
 
-// Forward declarations for WebView2
 struct ICoreWebView2Controller;
 struct ICoreWebView2;
 struct ICoreWebView2Environment;
@@ -37,12 +37,12 @@ protected:
 	afx_msg LRESULT OnWebViewMessage(WPARAM wParam, LPARAM lParam);
 	DECLARE_MESSAGE_MAP()
 
-private:
-	// WebView2 (using void* to avoid header dependency)
+public:
 	void* m_controller;
 	void* m_webView;
 	void* m_env;
 
+private:
 	void InitWebView2();
 	void UpdateWebView();
 	void ProcessWebViewMessage(CString& message);
@@ -52,7 +52,6 @@ private:
 	void OnClose();
 	void OnTimer(UINT_PTR nIDEvent);
 
-	// Helper functions
 	static CString JsonStringToCString(const Json::Value& value);
 	static CString EscapeJson(const CString& input);
 	static CString UrlEncodeCallerNumber(const CString& number);
