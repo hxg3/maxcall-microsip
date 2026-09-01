@@ -141,6 +141,7 @@ jobs:
         files: |
           MaxCall/MaxCall.exe
           MaxCall/res/ring.wav
+          MaxCall/crm_popup.html
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
