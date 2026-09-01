@@ -275,9 +275,6 @@
     <ClCompile Include="Transfer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="res\ring.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AAOptionsDlg.h" />

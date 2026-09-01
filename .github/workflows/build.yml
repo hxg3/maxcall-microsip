@@ -121,9 +121,8 @@ jobs:
         $sizeMB = [math]::Round($exe.Length / 1MB, 2)
         Write-Host "SUCCESS: $($exe.FullName) ($sizeMB MB)"
 
-        New-Item -ItemType Directory -Path "MaxCall/res" -Force | Out-Null
+        New-Item -ItemType Directory -Path "MaxCall" -Force | Out-Null
         Copy-Item $exe.FullName "MaxCall/MaxCall.exe" -Force
-        Copy-Item "res/ring.wav" "MaxCall/res/ring.wav" -Force
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
