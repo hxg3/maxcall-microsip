@@ -844,7 +844,7 @@ static DWORD WINAPI URLGetAsyncThread(LPVOID lpParam)
 			delete data;
 		}
 	}
-	else {
+	else if (data->hWnd) {
 		delete data;
 	}
 	return 0;
