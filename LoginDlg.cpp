@@ -103,7 +103,7 @@ void LoginDlg::OnBnClickedLogin()
 
 	KillTimer(1);
 	GetDlgItem(IDC_LOGIN_BTN)->EnableWindow(TRUE);
-	GetDlgItem(IDC_CANCEL)->EnableWindow(TRUE);
+	GetDlgItem(IDCANCEL)->EnableWindow(TRUE);
 
 	if (result.statusCode == 200) {
 		Json::Value response;
