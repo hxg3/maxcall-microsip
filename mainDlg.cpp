@@ -4724,49 +4724,19 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		// Fill background with top bar surface color
 		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
 		
-		CRect pillRc = rc;
-		pillRc.DeflateRect(2, 2, 2, 2);
-		
-		COLORREF textCol;
-		if (bSelected) {
-			CPen pen(PS_SOLID, 1, MAXCARE_TEAL);
-			CBrush brush(MAXCARE_WHITE);
-			CPen* pOldPen = pDC->SelectObject(&pen);
-			CBrush* pOldBrush = pDC->SelectObject(&brush);
-			pDC->RoundRect(&pillRc, CPoint(8, 8));
-			pDC->SelectObject(pOldPen);
-			pDC->SelectObject(pOldBrush);
-
-			// Bottom accent indicator bar
-			CPen accentPen(PS_SOLID, 2, MAXCARE_TEAL);
-			pOldPen = pDC->SelectObject(&accentPen);
-			pDC->MoveTo(pillRc.left + 6, pillRc.bottom - 2);
-			pDC->LineTo(pillRc.right - 6, pillRc.bottom - 2);
-			pDC->SelectObject(pOldPen);
-
-			textCol = MAXCARE_TEAL;
-		} else {
-			CPen pen(PS_SOLID, 1, MAXCARE_BORDER);
-			CBrush brush(MAXCARE_SURFACE);
-			CPen* pOldPen = pDC->SelectObject(&pen);
-			CBrush* pOldBrush = pDC->SelectObject(&brush);
-			pDC->RoundRect(&pillRc, CPoint(8, 8));
-			pDC->SelectObject(pOldPen);
-			pDC->SelectObject(pOldBrush);
-
-			textCol = MAXCARE_TEXT_MUTED;
-		}
+		COLORREF textCol = bSelected ? MAXCARE_TEAL : MAXCARE_TEXT_SEC;
 		
 		// Draw Tab Icon
 		TC_ITEM tci; tci.mask = TCIF_IMAGE;
 		tab->GetItem(nTab, &tci);
 		CImageList* pImg = tab->GetImageList();
+		int iconWidth = 0;
 		if (pImg && tci.iImage >= 0) {
 			IMAGEINFO ii; pImg->GetImageInfo(tci.iImage, &ii);
-			int iw = ii.rcImage.right - ii.rcImage.left;
+			iconWidth = ii.rcImage.right - ii.rcImage.left;
 			int ih = ii.rcImage.bottom - ii.rcImage.top;
-			int x = pillRc.left + 8;
-			int y = pillRc.top + (pillRc.Height() - ih) / 2;
+			int x = rc.left + 12;
+			int y = rc.top + (rc.Height() - ih) / 2;
 			pImg->Draw(pDC, tci.iImage, CPoint(x, y), ILD_TRANSPARENT);
 		}
 		
@@ -4777,19 +4747,29 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		tab->GetItem(nTab, &tci);
 		if (tci.pszText && *tci.pszText) {
 			CFont font;
-			font.CreateFont(-12, 0, 0, 0, bSelected ? FW_BOLD : FW_NORMAL, FALSE, FALSE, FALSE,
+			font.CreateFont(-13, 0, 0, 0, bSelected ? FW_BOLD : FW_SEMIBOLD, FALSE, FALSE, FALSE,
 				DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 				CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Segoe UI"));
 			CFont* pOldFont = pDC->SelectObject(&font);
 			pDC->SetBkMode(TRANSPARENT);
 			pDC->SetTextColor(textCol);
-			CRect textRc = pillRc;
-			textRc.left += 26; // right of icon
+			CRect textRc = rc;
+			textRc.left += (iconWidth > 0 ? iconWidth + 18 : 12);
 			pDC->DrawText(tci.pszText, textRc, DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
 			pDC->SelectObject(pOldFont);
 			font.DeleteObject();
 		}
 		delete[] tci.pszText;
+		
+		// Draw active tab indicator (smooth bottom line)
+		if (bSelected) {
+			CRect indicatorRc = rc;
+			indicatorRc.top = indicatorRc.bottom - 3; // 3px high line
+			indicatorRc.left += 8; // subtle padding
+			indicatorRc.right -= 8;
+			pDC->FillSolidRect(&indicatorRc, MAXCARE_TEAL);
+		}
+		
 		return;
 	} else if (nIDCtl == IDC_MAIN_MENU || nIDCtl == IDC_MAIN_LOGOUT) {
 		CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
@@ -4798,28 +4778,20 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		BOOL bPressed = (state & ODS_SELECTED);
 		BOOL bHot = (state & ODS_HOTLIGHT) || (state & ODS_FOCUS);
 		
-		COLORREF bg = MAXCARE_WHITE;
-		COLORREF border = MAXCARE_BORDER;
-		if (bPressed) {
-			bg = MAXCARE_TEAL_SOFT;
-			border = MAXCARE_TEAL;
-		} else if (bHot) {
-			bg = MAXCARE_TEAL_SOFT;
-			border = MAXCARE_TEAL;
-		}
-		
 		// Clear background
 		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
 		
-		// Rounded button background
-		CRect btnRc = rc; btnRc.DeflateRect(1, 1);
-		CPen pen(PS_SOLID, 1, border);
-		CBrush brush(bg);
-		CPen* pOldPen = pDC->SelectObject(&pen);
-		CBrush* pOldBrush = pDC->SelectObject(&brush);
-		pDC->RoundRect(&btnRc, CPoint(6, 6));
-		pDC->SelectObject(pOldPen);
-		pDC->SelectObject(pOldBrush);
+		// Rounded button background for hover/pressed states (no borders)
+		if (bPressed || bHot) {
+			CRect btnRc = rc; btnRc.DeflateRect(2, 2);
+			CPen pen(PS_NULL, 0, RGB(0,0,0));
+			CBrush brush(bPressed ? MAXCARE_BORDER : MAXCARE_TEAL_SOFT);
+			CPen* pOldPen = pDC->SelectObject(&pen);
+			CBrush* pOldBrush = pDC->SelectObject(&brush);
+			pDC->RoundRect(&btnRc, CPoint(8, 8));
+			pDC->SelectObject(pOldPen);
+			pDC->SelectObject(pOldBrush);
+		}
 		
 		// Draw icon centered
 		CButton* pBtn = (CButton*)GetDlgItem(nIDCtl);
