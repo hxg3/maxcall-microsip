@@ -2045,8 +2045,6 @@ CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
 	tab->InsertItem(2, &tabItem);
 
 	// Position buttons on the right side of the top bar
-	CRect clientRect;
-	GetClientRect(&clientRect);
 	int btnWidth = 36;
 	int btnHeight = 28;
 	int btnSpacing = 4;
@@ -2057,13 +2055,11 @@ CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
 	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
 		CRect(clientRect.right - rightMargin - btnWidth, topMargin, clientRect.right - rightMargin, topMargin + btnHeight), this, IDC_MAIN_LOGOUT);
 	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_EXIT));
-	m_ButtonLogout.SetToolTipText(Translate(_T("تسجيل الخروج")));
 
 	// Menu/Always on Top button (to the left of logout)
 	m_ButtonMenu.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
 		CRect(clientRect.right - rightMargin - btnWidth * 2 - btnSpacing, topMargin, clientRect.right - rightMargin - btnWidth - btnSpacing, topMargin + btnHeight), this, IDC_MAIN_MENU);
 	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DEFAULT_STARRED));
-	m_ButtonMenu.SetToolTipText(Translate(_T("تثبيت في الأعلى")));
 
 	if (widthAdd) {
 		tabRect.right += widthAdd;
