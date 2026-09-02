@@ -288,14 +288,18 @@ void CrmPopupDlg::ProcessWebViewMessage(CString& message)
 
 void CrmPopupDlg::LoadCallerInfo()
 {
-	CString server = accountSettings.account.server;
-	if (server.IsEmpty()) {
-		UpdateWebView();
-		return;
+	// استخراج الرقم النظيف من SIP URI إن وُجدت
+	CString cleanNumber = callerNumber;
+	int atPos = cleanNumber.Find(_T('@'));
+	if (atPos != -1) {
+		cleanNumber = cleanNumber.Left(atPos);
 	}
+	cleanNumber.TrimLeft(_T("sipSIP:"));
+	cleanNumber.Trim();
+	if (cleanNumber.IsEmpty()) cleanNumber = callerNumber;
 
 	CString url;
-	url.Format(_T("http://%s:3001/api/callers/%s"), server, UrlEncodeCallerNumber(callerNumber));
+	url.Format(_T("http://192.168.1.165:3001/api/callers/%s"), UrlEncodeCallerNumber(cleanNumber));
 
 	URLGetAsync(url, m_hWnd, WM_CRM_LOAD_RESULT);
 }
@@ -304,7 +308,17 @@ void CrmPopupDlg::UpdateWebView()
 {
 	if (!m_webView) return;
 
-	CString escapedNumber = EscapeJson(callerNumber);
+	// استخراج الرقم النظيف من SIP URI إن وُجدت
+	CString cleanNumber = callerNumber;
+	int atPos = cleanNumber.Find(_T('@'));
+	if (atPos != -1) {
+		cleanNumber = cleanNumber.Left(atPos);
+	}
+	cleanNumber.TrimLeft(_T("sipSIP:"));
+	cleanNumber.Trim();
+	if (cleanNumber.IsEmpty()) cleanNumber = callerNumber;
+
+	CString escapedNumber = EscapeJson(cleanNumber);
 	CString escapedName = EscapeJson(callerName);
 	CString escapedNotes = EscapeJson(notes);
 
@@ -321,15 +335,19 @@ void CrmPopupDlg::UpdateWebView()
 
 void CrmPopupDlg::SaveCallerInfo()
 {
-	CString server = accountSettings.account.server;
-	if (server.IsEmpty()) {
-		return;
+	// استخراج الرقم النظيف من SIP URI إن وُجدت
+	CString cleanNumber = callerNumber;
+	int atPos = cleanNumber.Find(_T('@'));
+	if (atPos != -1) {
+		cleanNumber = cleanNumber.Left(atPos);
 	}
+	cleanNumber.TrimLeft(_T("sipSIP:"));
+	cleanNumber.Trim();
+	if (cleanNumber.IsEmpty()) cleanNumber = callerNumber;
 
-	CString url;
-	url.Format(_T("http://%s:3001/api/callers"), server);
+	CString url = _T("http://192.168.1.165:3001/api/callers");
 
-	CString phone = EscapeJson(callerNumber);
+	CString phone = EscapeJson(cleanNumber);
 	CString name = EscapeJson(callerName);
 	CString callerNotes = EscapeJson(notes);
 
@@ -338,7 +356,6 @@ void CrmPopupDlg::SaveCallerInfo()
 
 	CString headers = _T("Content-Type: application/json; charset=utf-8");
 
-	// Use async call to prevent UI freezing
 	URLGetAsync(url, m_hWnd, WM_CRM_SAVE_RESULT, true, postData, headers);
 }
 
