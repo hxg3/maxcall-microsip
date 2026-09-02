@@ -269,18 +269,25 @@ LRESULT CrmPopupDlg::OnWebViewMessage(WPARAM wParam, LPARAM lParam)
 
 void CrmPopupDlg::ProcessWebViewMessage(CString& message)
 {
+	FILE* fp = fopen("maxcall_debug.log", "a");
+	if(fp) { fprintf(fp, "ProcessWebViewMessage called\n"); fclose(fp); }
+
 	Json::Value root;
 	Json::Reader reader;
 	std::string utf8 = CT2A(message, CP_UTF8);
 	if (reader.parse(utf8, root)) {
 		CString action = JsonStringToCString(root["action"]);
 		if (action == _T("save")) {
+			if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "Action is save\n"); fclose(fp); }
 			callerName = JsonStringToCString(root["name"]);
 			notes = JsonStringToCString(root["notes"]);
 
+			if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "Calling SaveCallerInfo\n"); fclose(fp); }
 			SaveCallerInfo();
 
+			if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "SaveCallerInfo returned, hiding window\n"); fclose(fp); }
 			ShowWindow(SW_HIDE);
+			if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "ProcessWebViewMessage done\n"); fclose(fp); }
 			return;
 		}
 	}
@@ -335,6 +342,9 @@ void CrmPopupDlg::UpdateWebView()
 
 void CrmPopupDlg::SaveCallerInfo()
 {
+	FILE* fp = fopen("maxcall_debug.log", "a");
+	if(fp) { fprintf(fp, "SaveCallerInfo start\n"); fclose(fp); }
+
 	// استخراج الرقم النظيف من SIP URI إن وُجدت
 	CString cleanNumber = callerNumber;
 	int atPos = cleanNumber.Find(_T('@'));
@@ -347,16 +357,20 @@ void CrmPopupDlg::SaveCallerInfo()
 
 	CString url = _T("http://192.168.1.165:3001/api/callers");
 
+	if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "Calling EscapeJson\n"); fclose(fp); }
 	CString phone = EscapeJson(cleanNumber);
 	CString name = EscapeJson(callerName);
 	CString callerNotes = EscapeJson(notes);
 
+	if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "Formatting postData\n"); fclose(fp); }
 	CString postData;
 	postData.Format(_T("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}"), (LPCTSTR)phone, (LPCTSTR)name, (LPCTSTR)callerNotes);
 
 	CString headers = _T("Content-Type: application/json; charset=utf-8");
 
+	if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "Calling URLGetAsync\n"); fclose(fp); }
 	URLGetAsync(url, m_hWnd, WM_CRM_SAVE_RESULT, true, postData, headers);
+	if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "URLGetAsync returned\n"); fclose(fp); }
 }
 
 LRESULT CrmPopupDlg::OnCrmLoadResult(WPARAM wParam, LPARAM lParam)

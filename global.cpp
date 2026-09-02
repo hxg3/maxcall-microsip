@@ -743,10 +743,14 @@ CStringA char2hex(char dec)
 
 static DWORD WINAPI URLGetAsyncThread(LPVOID lpParam)
 {
+	FILE* fp = fopen("maxcall_debug.log", "a");
+	if(fp) { fprintf(fp, "URLGetAsyncThread started\n"); fclose(fp); }
+
 	URLGetAsyncData *data = (URLGetAsyncData *)lpParam;
 	data->body.Empty();
 	data->statusCode = 0;
 	if (!data->url.IsEmpty()) {
+		if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "URLGetAsyncThread URL not empty\n"); fclose(fp); }
 		try {
 			CInternetSession session;
 			CHttpConnection* pHttp = NULL;
@@ -839,6 +843,7 @@ static DWORD WINAPI URLGetAsyncThread(LPVOID lpParam)
 			data->statusCode = 0;
 		}
 	}
+	if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "URLGetAsyncThread before PostMessage\n"); fclose(fp); }
 	if (data->message && data->hWnd && ::IsWindow(data->hWnd)) {
 		if (!PostMessage(data->hWnd, data->message, (WPARAM)data, 0)) {
 			delete data;
@@ -847,11 +852,15 @@ static DWORD WINAPI URLGetAsyncThread(LPVOID lpParam)
 	else if (data->hWnd) {
 		delete data;
 	}
+	if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "URLGetAsyncThread done\n"); fclose(fp); }
 	return 0;
 }
 
 void URLGetAsync(CString url, HWND hWnd, UINT message, bool post, CString postData, CString headers, CString username, CString password, void* userData)
 {
+	FILE* fp = fopen("maxcall_debug.log", "a");
+	if(fp) { fprintf(fp, "URLGetAsync called\n"); fclose(fp); }
+
 	HANDLE hThread;
 	URLGetAsyncData *data = new URLGetAsyncData();
 	data->hWnd = hWnd;
@@ -864,10 +873,13 @@ void URLGetAsync(CString url, HWND hWnd, UINT message, bool post, CString postDa
 	data->username = username;
 	data->password = password;
 	data->userData = userData;
+	if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "URLGetAsync calling CreateThread\n"); fclose(fp); }
 	if (!CreateThread(NULL, 0, URLGetAsyncThread, data, 0, NULL)) {
+		if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "URLGetAsync CreateThread failed, running sync\n"); fclose(fp); }
 		data->url.Empty();
 		URLGetAsyncThread(data);
 	}
+	if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "URLGetAsync returned\n"); fclose(fp); }
 }
 
 URLGetAsyncData URLGetSync(CString url, bool post, CString postData, CString headers, CString username, CString password, void* userData)
