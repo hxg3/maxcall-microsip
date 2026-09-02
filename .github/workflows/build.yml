@@ -132,10 +132,10 @@ jobs:
         retention-days: 30
 
     - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
       with:
-        name: MaxCall ${{ github.ref_name }}
+        name: ${{ startsWith(github.ref, 'refs/tags/') && format('MaxCall {0}', github.ref_name) || 'MaxCall Latest Build' }}
+        tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
         files: |
           MaxCall/MaxCall.exe
         generate_release_notes: true
