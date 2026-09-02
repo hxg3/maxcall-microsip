@@ -832,6 +832,10 @@ static DWORD WINAPI URLGetAsyncThread(LPVOID lpParam)
 		}
 		catch (CInternetException *e) {
 			data->statusCode = 0;
+			e->Delete();
+		}
+		catch (...) {
+			data->statusCode = 0;
 		}
 	}
 	if (data->message) {

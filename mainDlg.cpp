@@ -4676,8 +4676,12 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		int nTab = lpDrawItemStruct->itemID;
 		BOOL bSelected = (nTab == tab->GetCurSel());
 		CRect rc = lpDrawItemStruct->rcItem;
+		
+		// Background
 		COLORREF bg = bSelected ? MAXCARE_WHITE : MAXCARE_SURFACE;
 		pDC->FillSolidRect(&rc, bg);
+		
+		// Bottom line
 		if (bSelected) {
 			CPen pen(PS_SOLID, 3, MAXCARE_TEAL);
 			CPen* pOldPen = pDC->SelectObject(&pen);
@@ -4691,6 +4695,8 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 			pDC->LineTo(rc.right, rc.bottom - 1);
 			pDC->SelectObject(pOldPen);
 		}
+		
+		// Icon
 		TC_ITEM tci; tci.mask = TCIF_IMAGE;
 		tab->GetItem(nTab, &tci);
 		CImageList* pImg = tab->GetImageList();
@@ -4699,10 +4705,31 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 			int iw = ii.rcImage.right - ii.rcImage.left;
 			int ih = ii.rcImage.bottom - ii.rcImage.top;
 			int x = rc.left + (rc.Width() - iw) / 2;
-			int y = rc.top + (rc.Height() - ih) / 2;
+			int y = rc.top + (rc.Height() - ih) / 2 - 4;
 			if (bSelected) y -= 1;
 			pImg->Draw(pDC, tci.iImage, CPoint(x, y), ILD_TRANSPARENT);
 		}
+		
+		// Tab text label
+		tci.mask = TCIF_TEXT;
+		tci.pszText = new TCHAR[256];
+		tci.cchTextMax = 256;
+		tab->GetItem(nTab, &tci);
+		if (tci.pszText && *tci.pszText) {
+			CFont font;
+			font.CreateFont(-11, 0, 0, 0, bSelected ? FW_SEMIBOLD : FW_NORMAL, FALSE, FALSE, FALSE,
+				DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+				CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Segoe UI"));
+			CFont* pOldFont = pDC->SelectObject(&font);
+			pDC->SetBkMode(TRANSPARENT);
+			pDC->SetTextColor(bSelected ? MAXCARE_TEAL : MAXCARE_TEXT_MUTED);
+			CRect textRc = rc;
+			textRc.top += 18; // below icon
+			pDC->DrawText(tci.pszText, textRc, DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
+			pDC->SelectObject(pOldFont);
+			font.DeleteObject();
+		}
+		delete[] tci.pszText;
 		return;
 	} else if (nIDCtl == IDC_MAIN_MENU || nIDCtl == IDC_MAIN_LOGOUT) {
 		CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
@@ -4710,11 +4737,15 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		UINT state = lpDrawItemStruct->itemState;
 		BOOL bPressed = (state & ODS_SELECTED);
 		BOOL bHot = (state & ODS_HOTLIGHT) || (state & ODS_FOCUS);
+		
 		COLORREF bg = MAXCARE_WHITE;
 		COLORREF border = MAXCARE_BORDER;
-		if (bPressed) { bg = MAXCARE_TEAL_SOFT; border = MAXCARE_TEAL; }
-		else if (bHot) { bg = MAXCARE_TEAL_SOFT; border = MAXCARE_TEAL; }
+		if (bPressed || bHot) { bg = MAXCARE_TEAL_SOFT; border = MAXCARE_TEAL; }
+		
+		// Clear background
 		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
+		
+		// Rounded button background
 		CRect btnRc = rc; btnRc.DeflateRect(1, 1);
 		CPen pen(PS_SOLID, 1, border);
 		CBrush brush(bg);
@@ -4723,6 +4754,8 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		pDC->RoundRect(&btnRc, CPoint(6, 6));
 		pDC->SelectObject(pOldPen);
 		pDC->SelectObject(pOldBrush);
+		
+		// Draw icon centered
 		CButton* pBtn = (CButton*)GetDlgItem(nIDCtl);
 		HICON hIcon = pBtn ? pBtn->GetIcon() : NULL;
 		if (hIcon) {

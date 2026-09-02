@@ -351,7 +351,15 @@ void CrmPopupDlg::SaveCallerInfo()
 	postData.Format(_T("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}"), phone, name, callerNotes);
 
 	CString headers = _T("Content-Type: application/json; charset=utf-8");
-	URLGetAsync(url, NULL, 0, true, postData, headers);
+	
+	// Use synchronous call with error handling - more reliable than async thread
+	try {
+		URLGetAsyncData result = URLGetSync(url, true, postData, headers);
+		// Result ignored - fire and forget for CRM save
+	}
+	catch (...) {
+		// Ignore any exceptions - don't crash the app
+	}
 }
 
 void CrmPopupDlg::OnClose()
