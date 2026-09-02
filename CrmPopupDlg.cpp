@@ -39,11 +39,12 @@ public:
 
 	HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* webview, ICoreWebView2WebMessageReceivedEventArgs* args) override
 	{
-		CComBSTR msg;
+		LPWSTR msg = nullptr;
 		args->TryGetWebMessageAsString(&msg);
 		if (msg) {
 			CString strMsg(msg);
 			PostMessage(m_dlg->m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)new CString(strMsg));
+			CoTaskMemFree(msg);
 		}
 		return S_OK;
 	}
