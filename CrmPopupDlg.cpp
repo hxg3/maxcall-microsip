@@ -242,7 +242,7 @@ HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller
 				FreeResource(hRes);
 			}
 
-			PostMessage(WM_WEBVIEW_READY, 0, 0);
+			::PostMessage(m_dlg->m_hWnd, WM_WEBVIEW_READY, 0, 0);
 		}
 	}
 	return S_OK;
