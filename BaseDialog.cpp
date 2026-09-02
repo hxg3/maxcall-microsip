@@ -55,24 +55,28 @@ BOOL CBaseDialog::PreTranslateMessage(MSG* pMsg)
 		mainWnd = (CBaseDialog *)AfxGetApp()->GetMainWnd();
 	}
 	if (
-		(pMsg->message == WM_SYSKEYDOWN && pMsg->wParam == VK_F10)
+		(pMsg->message == WM_SYSKEYDOWN && (pMsg->wParam == VK_F10 || pMsg->wParam == VK_MENU))
 		||
 		(pMsg->message == WM_SYSKEYUP && pMsg->wParam == VK_MENU)
 		) {
-		if (mainWnd == this || mainWnd == this->GetParent()) {
+		if (mainWnd && (mainWnd == this || mainWnd == this->GetParent())) {
 			bool controlState = GetKeyState(VK_CONTROL) >> 7;
 			if (!controlState) {
 				CWnd *menuButton = mainWnd->GetDlgItem(IDC_MAIN_MENU);
-				if (mainWnd->GetFocus() == menuButton) {
-					if (pMsg->wParam == VK_F10) {
-						mainWnd->TabFocusSet();
+				if (menuButton && ::IsWindow(menuButton->m_hWnd)) {
+					if (mainWnd->GetFocus() == menuButton) {
+						if (pMsg->wParam == VK_F10) {
+							mainWnd->TabFocusSet();
+						}
 					}
-				}
-				else {
-					menuButton->SetFocus();
+					else {
+						menuButton->SetFocus();
+					}
 				}
 				catched = TRUE;
 			}
+		} else {
+			catched = TRUE; // Consume Alt key on login dialog to prevent crash
 		}
 	}
 	else

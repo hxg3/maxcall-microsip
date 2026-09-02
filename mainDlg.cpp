@@ -1846,7 +1846,7 @@ BOOL CmainDlg::OnInitDialog()
 {
 	CBaseDialog::OnInitDialog();
 
-	// Extract embedded ringtone.wav to exe directory on startup
+	// Extract embedded ringtone.wav / ring.wav / ringing.wav to exe directory on startup
 	{
 		HRSRC hRes = FindResource(NULL, MAKEINTRESOURCE(IDR_RING_WAV), RT_RCDATA);
 		if (hRes) {
@@ -1854,12 +1854,23 @@ BOOL CmainDlg::OnInitDialog()
 			if (hData) {
 				DWORD size = SizeofResource(NULL, hRes);
 				void* data = LockResource(hData);
-				if (data) {
-					CString ringPath = accountSettings.pathExe + _T("\\res\\ringtone.wav");
+				if (data && size > 0) {
 					CreateDirectory(accountSettings.pathExe + _T("\\res"), NULL);
-					CFile f(ringPath, CFile::modeCreate | CFile::modeWrite);
-					f.Write(data, size);
-					f.Close();
+					LPCTSTR targets[] = {
+						_T("\\res\\ringtone.wav"),
+						_T("\\res\\ring.wav"),
+						_T("\\res\\ringing.wav"),
+						_T("\\ringing.wav"),
+						_T("\\ring.wav")
+					};
+					for (int i = 0; i < 5; i++) {
+						CString targetPath = accountSettings.pathExe + targets[i];
+						CFile f;
+						if (f.Open(targetPath, CFile::modeCreate | CFile::modeWrite)) {
+							f.Write(data, size);
+							f.Close();
+						}
+					}
 					UnlockResource(hData);
 				}
 			}
@@ -4318,20 +4329,40 @@ LRESULT CmainDlg::onPlayerPlay(WPARAM wParam, LPARAM lParam)
 			inCall = TRUE;
 			break;
 		case MSIP_SOUND_RINGTONE:
-			filename.Append(_T("res\\ringtone.wav"));
-			noLoop = FALSE;
-			inCall = FALSE;
-			break;
+			{
+				CString p1 = accountSettings.pathExe + _T("\\res\\ringtone.wav");
+				CString p2 = accountSettings.pathExe + _T("\\res\\ring.wav");
+				if (PathFileExists(p1)) {
+					filename = _T("res\\ringtone.wav");
+				} else if (PathFileExists(p2)) {
+					filename = _T("res\\ring.wav");
+				} else {
+					filename = _T("ring.wav");
+				}
+				noLoop = FALSE;
+				inCall = FALSE;
+				break;
+			}
 		case MSIP_SOUND_RINGIN2:
-			filename.Append(_T("ringing.wav"));
-			noLoop = TRUE;
-			inCall = TRUE;
-			break;
 		case MSIP_SOUND_RINGING:
-			filename.Append(_T("ringing.wav"));
-			noLoop = TRUE;
-			inCall = TRUE;
-			break;
+			{
+				CString p1 = accountSettings.pathExe + _T("\\ringing.wav");
+				CString p2 = accountSettings.pathExe + _T("\\res\\ringing.wav");
+				CString p3 = accountSettings.pathExe + _T("\\res\\ring.wav");
+				CString p4 = accountSettings.pathExe + _T("\\res\\ringtone.wav");
+				if (PathFileExists(p1)) {
+					filename = _T("ringing.wav");
+				} else if (PathFileExists(p2)) {
+					filename = _T("res\\ringing.wav");
+				} else if (PathFileExists(p3)) {
+					filename = _T("res\\ring.wav");
+				} else {
+					filename = _T("res\\ringtone.wav");
+				}
+				noLoop = FALSE;
+				inCall = TRUE;
+				break;
+			}
 		default:
 			noLoop = TRUE;
 			inCall = FALSE;
@@ -4690,20 +4721,43 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		BOOL bSelected = (nTab == tab->GetCurSel());
 		CRect rc = lpDrawItemStruct->rcItem;
 		
-		// Background
-		COLORREF bg = bSelected ? MAXCARE_WHITE : MAXCARE_SURFACE;
-		pDC->FillSolidRect(&rc, bg);
+		// Fill background with top bar surface color
+		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
 		
-		// Bottom indicator line for selected tab
+		CRect pillRc = rc;
+		pillRc.DeflateRect(2, 2, 2, 2);
+		
+		COLORREF textCol;
 		if (bSelected) {
-			CPen pen(PS_SOLID, 3, MAXCARE_TEAL);
+			CPen pen(PS_SOLID, 1, MAXCARE_TEAL);
+			CBrush brush(MAXCARE_WHITE);
 			CPen* pOldPen = pDC->SelectObject(&pen);
-			pDC->MoveTo(rc.left + 8, rc.bottom - 1);
-			pDC->LineTo(rc.right - 8, rc.bottom - 1);
+			CBrush* pOldBrush = pDC->SelectObject(&brush);
+			pDC->RoundRect(&pillRc, CPoint(8, 8));
 			pDC->SelectObject(pOldPen);
+			pDC->SelectObject(pOldBrush);
+
+			// Bottom accent indicator bar
+			CPen accentPen(PS_SOLID, 2, MAXCARE_TEAL);
+			pOldPen = pDC->SelectObject(&accentPen);
+			pDC->MoveTo(pillRc.left + 6, pillRc.bottom - 2);
+			pDC->LineTo(pillRc.right - 6, pillRc.bottom - 2);
+			pDC->SelectObject(pOldPen);
+
+			textCol = MAXCARE_TEAL;
+		} else {
+			CPen pen(PS_SOLID, 1, MAXCARE_BORDER);
+			CBrush brush(MAXCARE_SURFACE);
+			CPen* pOldPen = pDC->SelectObject(&pen);
+			CBrush* pOldBrush = pDC->SelectObject(&brush);
+			pDC->RoundRect(&pillRc, CPoint(8, 8));
+			pDC->SelectObject(pOldPen);
+			pDC->SelectObject(pOldBrush);
+
+			textCol = MAXCARE_TEXT_MUTED;
 		}
 		
-		// Icon
+		// Draw Tab Icon
 		TC_ITEM tci; tci.mask = TCIF_IMAGE;
 		tab->GetItem(nTab, &tci);
 		CImageList* pImg = tab->GetImageList();
@@ -4711,27 +4765,27 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 			IMAGEINFO ii; pImg->GetImageInfo(tci.iImage, &ii);
 			int iw = ii.rcImage.right - ii.rcImage.left;
 			int ih = ii.rcImage.bottom - ii.rcImage.top;
-			int x = rc.left + (rc.Width() - iw) / 2;
-			int y = rc.top + 4;
+			int x = pillRc.left + 8;
+			int y = pillRc.top + (pillRc.Height() - ih) / 2;
 			pImg->Draw(pDC, tci.iImage, CPoint(x, y), ILD_TRANSPARENT);
 		}
 		
-		// Tab text label
+		// Draw Tab Text Label
 		tci.mask = TCIF_TEXT;
 		tci.pszText = new TCHAR[256];
 		tci.cchTextMax = 256;
 		tab->GetItem(nTab, &tci);
 		if (tci.pszText && *tci.pszText) {
 			CFont font;
-			font.CreateFont(-12, 0, 0, 0, bSelected ? FW_SEMIBOLD : FW_NORMAL, FALSE, FALSE, FALSE,
+			font.CreateFont(-12, 0, 0, 0, bSelected ? FW_BOLD : FW_NORMAL, FALSE, FALSE, FALSE,
 				DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 				CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Segoe UI"));
 			CFont* pOldFont = pDC->SelectObject(&font);
 			pDC->SetBkMode(TRANSPARENT);
-			pDC->SetTextColor(bSelected ? MAXCARE_TEAL : MAXCARE_TEXT_MUTED);
-			CRect textRc = rc;
-			textRc.top += 24; // below icon
-			pDC->DrawText(tci.pszText, textRc, DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
+			pDC->SetTextColor(textCol);
+			CRect textRc = pillRc;
+			textRc.left += 26; // right of icon
+			pDC->DrawText(tci.pszText, textRc, DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
 			pDC->SelectObject(pOldFont);
 			font.DeleteObject();
 		}
@@ -4744,29 +4798,26 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		BOOL bPressed = (state & ODS_SELECTED);
 		BOOL bHot = (state & ODS_HOTLIGHT) || (state & ODS_FOCUS);
 		
-		COLORREF bg = MAXCARE_SURFACE;
+		COLORREF bg = MAXCARE_WHITE;
 		COLORREF border = MAXCARE_BORDER;
-		COLORREF iconColor = MAXCARE_TEXT_MUTED;
 		if (bPressed) {
 			bg = MAXCARE_TEAL_SOFT;
 			border = MAXCARE_TEAL;
-			iconColor = MAXCARE_TEAL;
 		} else if (bHot) {
 			bg = MAXCARE_TEAL_SOFT;
 			border = MAXCARE_TEAL;
-			iconColor = MAXCARE_TEAL;
 		}
 		
 		// Clear background
 		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
 		
 		// Rounded button background
-		CRect btnRc = rc; btnRc.DeflateRect(2, 2);
+		CRect btnRc = rc; btnRc.DeflateRect(1, 1);
 		CPen pen(PS_SOLID, 1, border);
 		CBrush brush(bg);
 		CPen* pOldPen = pDC->SelectObject(&pen);
 		CBrush* pOldBrush = pDC->SelectObject(&brush);
-		pDC->RoundRect(&btnRc, CPoint(8, 8));
+		pDC->RoundRect(&btnRc, CPoint(6, 6));
 		pDC->SelectObject(pOldPen);
 		pDC->SelectObject(pOldBrush);
 		

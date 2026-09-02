@@ -806,6 +806,7 @@ static DWORD WINAPI URLGetAsyncThread(LPVOID lpParam)
 				pFile->SetOption(INTERNET_OPTION_CONNECT_TIMEOUT, 10000);
 
 				bool status = pFile->SendRequest(requestHeaders, (LPVOID)strFormData.GetBuffer(), strFormData.GetLength());
+				strFormData.ReleaseBuffer();
 				if (status) {
 					pFile->QueryInfoStatusCode(data->statusCode);
 					CStringA buf;
@@ -838,9 +839,9 @@ static DWORD WINAPI URLGetAsyncThread(LPVOID lpParam)
 			data->statusCode = 0;
 		}
 	}
-	if (data->message) {
-		if (data->hWnd) {
-			PostMessage(data->hWnd, data->message, (WPARAM)data, 0);
+	if (data->message && data->hWnd && ::IsWindow(data->hWnd)) {
+		if (!PostMessage(data->hWnd, data->message, (WPARAM)data, 0)) {
+			delete data;
 		}
 	}
 	else {
