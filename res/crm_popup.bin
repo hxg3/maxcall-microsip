@@ -56,10 +56,16 @@ let callerData = {number:'', name:'', notes:'', callId:-1};
 function updateCallerInfo(number, name, notes, callId) {
   callerData = {number, name: name || 'Unknown', notes: notes || '', callId};
   document.getElementById('callerName').textContent = callerData.name;
-  document.getElementById('callerNumber').textContent = callerData.number;
+  document.getElementById('callerNumber').textContent = callerData.number || '-';
   document.getElementById('callerNameInput').value = callerData.name !== 'Unknown' ? callerData.name : '';
   document.getElementById('notes').value = callerData.notes;
-  document.getElementById('avatar').textContent = callerData.name.charAt(0).toUpperCase();
+  document.getElementById('avatar').textContent = (callerData.name || '?').charAt(0).toUpperCase();
+
+  const btn = document.getElementById('saveBtn');
+  if (btn) {
+    btn.textContent = 'Save';
+    btn.disabled = false;
+  }
 
   const badge = document.getElementById('statusBadge');
   if (callerData.name && callerData.name !== 'Unknown' && callerData.name !== 'New Caller') {

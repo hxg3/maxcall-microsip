@@ -254,6 +254,7 @@ HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller
 
 LRESULT CrmPopupDlg::OnWebViewReady(WPARAM wParam, LPARAM lParam)
 {
+	UpdateWebView();
 	LoadCallerInfo();
 	return 0;
 }
@@ -401,9 +402,8 @@ LRESULT CrmPopupDlg::OnCrmSaveResult(WPARAM wParam, LPARAM lParam)
 {
 	URLGetAsyncData* result = (URLGetAsyncData*)wParam;
 	if (result) {
-		// Save completed - could show success/error feedback here
 		if (result->statusCode >= 200 && result->statusCode < 300) {
-			// Success - data saved
+			UpdateWebView();
 		}
 		delete result;
 	}
@@ -458,6 +458,7 @@ void CrmPopupDlg::OnSize(UINT nType, int cx, int cy)
 
 void CrmPopupDlg::Restore()
 {
+	UpdateWebView();
 	ShowWindow(SW_SHOWNORMAL);
 	SetForegroundWindow();
 	SetTimer(1, 120000, NULL);
