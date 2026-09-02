@@ -30,10 +30,14 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual BOOL OnInitDialog();
+	virtual void OnCancel() { ShowWindow(SW_HIDE); }
+	virtual void OnOK() { ShowWindow(SW_HIDE); }
 	virtual void TabFocusSet() {}
 	virtual bool GotoTab(int i, CTabCtrl* tab = NULL) { return true; }
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnClose();
+	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
+	virtual void PostNcDestroy();
 	afx_msg LRESULT OnWebViewReady(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnWebViewMessage(WPARAM wParam, LPARAM lParam);
 	DECLARE_MESSAGE_MAP()

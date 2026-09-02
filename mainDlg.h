@@ -260,6 +260,7 @@ public:
 	afx_msg void OnTimer (UINT_PTR TimerVal);
 	afx_msg void OnTcnSelchangeTab(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnTcnSelchangingTab(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 	afx_msg void OnMenuWebsite();
 	afx_msg void OnMenuHelp();
 	afx_msg void OnMenuAddl();

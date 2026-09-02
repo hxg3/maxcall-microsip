@@ -138,6 +138,7 @@ void CrmPopupDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CrmPopupDlg, CBaseDialog)
 	ON_WM_SIZE()
 	ON_WM_CLOSE()
+	ON_WM_SYSCOMMAND()
 	ON_MESSAGE(WM_WEBVIEW_READY, &CrmPopupDlg::OnWebViewReady)
 	ON_MESSAGE(WM_WEBVIEW_MESSAGE, &CrmPopupDlg::OnWebViewMessage)
 END_MESSAGE_MAP()
@@ -356,6 +357,36 @@ void CrmPopupDlg::SaveCallerInfo()
 void CrmPopupDlg::OnClose()
 {
 	ShowWindow(SW_HIDE);
+}
+
+void CrmPopupDlg::OnSysCommand(UINT nID, LPARAM lParam)
+{
+	if ((nID & 0xFFF0) == SC_CLOSE) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
+	CBaseDialog::OnSysCommand(nID, lParam);
+}
+
+void CrmPopupDlg::PostNcDestroy()
+{
+	// Do NOT call delete this - mainDlg manages lifetime via DestroyWindow
+	// Just cleanup WebView2
+	if (m_controller) {
+		ICoreWebView2Controller* ctrl = static_cast<ICoreWebView2Controller*>(m_controller);
+		ctrl->Close();
+		ctrl->Release();
+		m_controller = nullptr;
+	}
+	if (m_webView) {
+		static_cast<ICoreWebView2*>(m_webView)->Release();
+		m_webView = nullptr;
+	}
+	if (m_env) {
+		static_cast<ICoreWebView2Environment*>(m_env)->Release();
+		m_env = nullptr;
+	}
+	CBaseDialog::PostNcDestroy();
 }
 
 void CrmPopupDlg::OnSize(UINT nType, int cx, int cy)

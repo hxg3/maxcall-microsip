@@ -1610,6 +1610,7 @@ BEGIN_MESSAGE_MAP(CmainDlg, CBaseDialog)
 	ON_WM_DEVICECHANGE()
 	ON_WM_WTSSESSION_CHANGE()
 	ON_WM_DESTROY()
+	ON_WM_DRAWITEM()
 	ON_BN_CLICKED(IDOK, OnBnClickedOk)
 	ON_BN_CLICKED(IDC_MAIN_MENU, OnBnClickedMenu)
 	ON_BN_CLICKED(IDC_MAIN_LOGOUT, OnBnClickedLogout)
@@ -2027,8 +2028,8 @@ BOOL CmainDlg::OnInitDialog()
 	tabRect.bottom += lineRect.bottom;
 	tab->SetWindowPos(NULL, tabRect.left, tabRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 	imageListTabs = new CImageList();
-	imageListTabs->Create(16, 16, ILC_COLOR32, 3, 3);
-	imageListTabs->SetBkColor(RGB(255, 255, 255));
+	imageListTabs->Create(16, 16, ILC_COLOR32 | ILC_MASK, 3, 3);
+	imageListTabs->SetBkColor(MAXCARE_SURFACE);
 	imageListTabs->Add(LoadImageIcon(IDI_CALL_OUT));
 	imageListTabs->Add(LoadImageIcon(IDI_CALL_IN));
 	imageListTabs->Add(LoadImageIcon(IDI_CONTACT));
@@ -2037,11 +2038,11 @@ BOOL CmainDlg::OnInitDialog()
 
 	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DEFAULT_STARRED));
 	m_ButtonMenu.SetWindowText(Translate(_T("Always on Top")));
-	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_ICON | BS_FLAT,
-		CRect(_GLOBAL_WIDTH - 38, 3, _GLOBAL_WIDTH - 20, 14), this, IDC_MAIN_LOGOUT);
+	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+		CRect(_GLOBAL_WIDTH - 45, 1, _GLOBAL_WIDTH - 24, 15), this, IDC_MAIN_LOGOUT);
 	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_EXIT));
 	m_ButtonLogout.SetWindowText(Translate(_T("Logout")));
-	m_ButtonMenu.SetWindowPos(NULL, _GLOBAL_WIDTH - 19, 3, 16, 11, SWP_NOZORDER);
+	m_ButtonMenu.SetWindowPos(NULL, _GLOBAL_WIDTH - 22, 1, 20, 14, SWP_NOZORDER);
 
 	if (widthAdd) {
 		tabRect.right += widthAdd;
@@ -2050,10 +2051,10 @@ BOOL CmainDlg::OnInitDialog()
 		m_ButtonMenu.GetWindowRect(btnRect);
 		ScreenToClient(btnRect);
 		m_ButtonMenu.SetWindowPos(NULL, btnRect.left + widthAdd, btnRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
-		m_ButtonLogout.SetWindowPos(NULL, btnRect.left + widthAdd - 19, btnRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+		m_ButtonLogout.SetWindowPos(NULL, btnRect.left + widthAdd - 22, btnRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 	}
 
-	AutoMove(tab->m_hWnd, 0, 0, 100, 0);
+	AutoMove(tab->m_hWnd, 0, 0, 88, 0);
 	AutoMove(m_ButtonMenu.m_hWnd, 100, 0, 0, 0);
 	AutoMove(m_ButtonLogout.m_hWnd, 100, 0, 0, 0);
 
@@ -4665,6 +4666,74 @@ HBRUSH CmainDlg::OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor)
 {
 	HBRUSH br = CBaseDialog::OnCtlColor(pDC, pWnd, nCtlColor);
 	return br;
+}
+
+void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
+{
+	if (nIDCtl == IDC_MAIN_TAB) {
+		CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
+		CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
+		int nTab = lpDrawItemStruct->itemID;
+		BOOL bSelected = (nTab == tab->GetCurSel());
+		CRect rc = lpDrawItemStruct->rcItem;
+		COLORREF bg = bSelected ? MAXCARE_WHITE : MAXCARE_SURFACE;
+		pDC->FillSolidRect(&rc, bg);
+		if (bSelected) {
+			CPen pen(PS_SOLID, 3, MAXCARE_TEAL);
+			CPen* pOldPen = pDC->SelectObject(&pen);
+			pDC->MoveTo(rc.left + 4, rc.bottom - 1);
+			pDC->LineTo(rc.right - 4, rc.bottom - 1);
+			pDC->SelectObject(pOldPen);
+		} else {
+			CPen pen(PS_SOLID, 1, MAXCARE_BORDER);
+			CPen* pOldPen = pDC->SelectObject(&pen);
+			pDC->MoveTo(rc.left, rc.bottom - 1);
+			pDC->LineTo(rc.right, rc.bottom - 1);
+			pDC->SelectObject(pOldPen);
+		}
+		TC_ITEM tci; tci.mask = TCIF_IMAGE;
+		tab->GetItem(nTab, &tci);
+		CImageList* pImg = tab->GetImageList();
+		if (pImg && tci.iImage >= 0) {
+			IMAGEINFO ii; pImg->GetImageInfo(tci.iImage, &ii);
+			int iw = ii.rcImage.right - ii.rcImage.left;
+			int ih = ii.rcImage.bottom - ii.rcImage.top;
+			int x = rc.left + (rc.Width() - iw) / 2;
+			int y = rc.top + (rc.Height() - ih) / 2;
+			if (bSelected) y -= 1;
+			pImg->Draw(pDC, tci.iImage, CPoint(x, y), ILD_TRANSPARENT);
+		}
+		return;
+	} else if (nIDCtl == IDC_MAIN_MENU || nIDCtl == IDC_MAIN_LOGOUT) {
+		CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
+		CRect rc = lpDrawItemStruct->rcItem;
+		UINT state = lpDrawItemStruct->itemState;
+		BOOL bPressed = (state & ODS_SELECTED);
+		BOOL bHot = (state & ODS_HOTLIGHT) || (state & ODS_FOCUS);
+		COLORREF bg = MAXCARE_WHITE;
+		COLORREF border = MAXCARE_BORDER;
+		if (bPressed) { bg = MAXCARE_TEAL_SOFT; border = MAXCARE_TEAL; }
+		else if (bHot) { bg = MAXCARE_TEAL_SOFT; border = MAXCARE_TEAL; }
+		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
+		CRect btnRc = rc; btnRc.DeflateRect(1, 1);
+		CPen pen(PS_SOLID, 1, border);
+		CBrush brush(bg);
+		CPen* pOldPen = pDC->SelectObject(&pen);
+		CBrush* pOldBrush = pDC->SelectObject(&brush);
+		pDC->RoundRect(&btnRc, CPoint(6, 6));
+		pDC->SelectObject(pOldPen);
+		pDC->SelectObject(pOldBrush);
+		CButton* pBtn = (CButton*)GetDlgItem(nIDCtl);
+		HICON hIcon = pBtn ? pBtn->GetIcon() : NULL;
+		if (hIcon) {
+			int iconSize = 12;
+			int x = rc.left + (rc.Width() - iconSize) / 2;
+			int y = rc.top + (rc.Height() - iconSize) / 2;
+			::DrawIconEx(pDC->m_hDC, x, y, hIcon, iconSize, iconSize, 0, NULL, DI_NORMAL);
+		}
+		return;
+	}
+	CBaseDialog::OnDrawItem(nIDCtl, lpDrawItemStruct);
 }
 
 void CmainDlg::OnContextMenu(CWnd *pWnd, CPoint point)
