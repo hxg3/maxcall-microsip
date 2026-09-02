@@ -39,7 +39,7 @@ if (-not $SkipPjsip -and -not (Test-Path "$scriptDir\..\lib\libpjproject-i386-Wi
 
 Write-Host "Building MaxCall..." -ForegroundColor Yellow
 $slnFile = "$scriptDir\microsip.sln"
-& $msbuild $slnFile /p:Configuration=$Configuration /p:Platform=$Platform /verbosity:minimal /nologo
+& $msbuild $slnFile /p:Configuration=$Configuration /p:Platform=$Platform /p:OutDir=bin\$Configuration\ /verbosity:minimal /nologo
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "BUILD SUCCESS" -ForegroundColor Green

@@ -141,6 +141,8 @@ BEGIN_MESSAGE_MAP(CrmPopupDlg, CBaseDialog)
 	ON_WM_SYSCOMMAND()
 	ON_MESSAGE(WM_WEBVIEW_READY, &CrmPopupDlg::OnWebViewReady)
 	ON_MESSAGE(WM_WEBVIEW_MESSAGE, &CrmPopupDlg::OnWebViewMessage)
+	ON_MESSAGE(WM_CRM_LOAD_RESULT, &CrmPopupDlg::OnCrmLoadResult)
+	ON_MESSAGE(WM_CRM_SAVE_RESULT, &CrmPopupDlg::OnCrmSaveResult)
 END_MESSAGE_MAP()
 
 BOOL CrmPopupDlg::OnInitDialog()
@@ -295,23 +297,7 @@ void CrmPopupDlg::LoadCallerInfo()
 	CString url;
 	url.Format(_T("http://%s:3001/api/callers/%s"), server, UrlEncodeCallerNumber(callerNumber));
 
-	URLGetAsyncData result = URLGetSync(url);
-
-	if (result.statusCode >= 200 && result.statusCode < 300 && !result.body.IsEmpty()) {
-		Json::Value caller;
-		Json::Reader reader;
-		if (reader.parse((LPCSTR)result.body, caller)) {
-			CString savedName = JsonStringToCString(caller["name"]);
-			if (!savedName.IsEmpty()) {
-				callerName = savedName;
-			}
-			if (caller["notes"].isString()) {
-				notes = JsonStringToCString(caller["notes"]);
-			}
-		}
-	}
-
-	UpdateWebView();
+	URLGetAsync(url, m_hWnd, WM_CRM_LOAD_RESULT);
 }
 
 void CrmPopupDlg::UpdateWebView()
@@ -351,15 +337,45 @@ void CrmPopupDlg::SaveCallerInfo()
 	postData.Format(_T("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}"), phone, name, callerNotes);
 
 	CString headers = _T("Content-Type: application/json; charset=utf-8");
-	
-	// Use synchronous call with error handling - more reliable than async thread
-	try {
-		URLGetAsyncData result = URLGetSync(url, true, postData, headers);
-		// Result ignored - fire and forget for CRM save
+
+	// Use async call to prevent UI freezing
+	URLGetAsync(url, m_hWnd, WM_CRM_SAVE_RESULT, true, postData, headers);
+}
+
+LRESULT CrmPopupDlg::OnCrmLoadResult(WPARAM wParam, LPARAM lParam)
+{
+	URLGetAsyncData* result = (URLGetAsyncData*)wParam;
+	if (result) {
+		if (result->statusCode >= 200 && result->statusCode < 300 && !result->body.IsEmpty()) {
+			Json::Value caller;
+			Json::Reader reader;
+			if (reader.parse((LPCSTR)result->body, caller)) {
+				CString savedName = JsonStringToCString(caller["name"]);
+				if (!savedName.IsEmpty()) {
+					callerName = savedName;
+				}
+				if (caller["notes"].isString()) {
+					notes = JsonStringToCString(caller["notes"]);
+				}
+			}
+		}
+		UpdateWebView();
+		delete result;
 	}
-	catch (...) {
-		// Ignore any exceptions - don't crash the app
+	return 0;
+}
+
+LRESULT CrmPopupDlg::OnCrmSaveResult(WPARAM wParam, LPARAM lParam)
+{
+	URLGetAsyncData* result = (URLGetAsyncData*)wParam;
+	if (result) {
+		// Save completed - could show success/error feedback here
+		if (result->statusCode >= 200 && result->statusCode < 300) {
+			// Success - data saved
+		}
+		delete result;
 	}
+	return 0;
 }
 
 void CrmPopupDlg::OnClose()

@@ -76,7 +76,7 @@ BOOL SettingsDlg::OnInitDialog()
 
 	TranslateDialog(this->m_hWnd);
 
-	GetDlgItem(IDC_SETTINGS_RINGTONE)->SetWindowText(accountSettings.ringtone.IsEmpty() ? accountSettings.pathExe + _T("\\res\\ring.wav") : accountSettings.ringtone);
+	GetDlgItem(IDC_SETTINGS_RINGTONE)->SetWindowText(accountSettings.ringtone.IsEmpty() ? accountSettings.pathExe + _T("\\res\\ringtone.wav") : accountSettings.ringtone);
 	((CSliderCtrl*)GetDlgItem(IDC_SETTINGS_VOLUME_RING))->SetRange(0, 100);
 	((CSliderCtrl*)GetDlgItem(IDC_SETTINGS_VOLUME_RING))->SetPos(accountSettings.volumeRing);
 	GetDlgItem(IDC_SETTINGS_RECORDING)->SetWindowText(accountSettings.recordingPath);
@@ -690,7 +690,7 @@ void SettingsDlg::OnHScroll(UINT nSBCode, UINT, CScrollBar* sender)
 			accountSettings.volumeRing = ((CSliderCtrl*)GetDlgItem(IDC_SETTINGS_VOLUME_RING))->GetPos();
 			CString ringtone;
 			GetDlgItem(IDC_SETTINGS_RINGTONE)->GetWindowText(ringtone);
-			mainDlg->PlayerPlay(ringtone.IsEmpty() ? accountSettings.pathExe + _T("\\res\\ring.wav") : ringtone, true, false);
+			mainDlg->PlayerPlay(ringtone.IsEmpty() ? accountSettings.pathExe + _T("\\res\\ringtone.wav") : ringtone, true, false);
 			accountSettings.volumeRing = volumeRingOld;
 		}
 	}

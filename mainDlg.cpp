@@ -1846,7 +1846,7 @@ BOOL CmainDlg::OnInitDialog()
 {
 	CBaseDialog::OnInitDialog();
 
-	// Extract embedded ring.wav to exe directory on startup
+	// Extract embedded ringtone.wav to exe directory on startup
 	{
 		HRSRC hRes = FindResource(NULL, MAKEINTRESOURCE(IDR_RING_WAV), RT_RCDATA);
 		if (hRes) {
@@ -1855,7 +1855,7 @@ BOOL CmainDlg::OnInitDialog()
 				DWORD size = SizeofResource(NULL, hRes);
 				void* data = LockResource(hData);
 				if (data) {
-					CString ringPath = accountSettings.pathExe + _T("\\res\\ring.wav");
+					CString ringPath = accountSettings.pathExe + _T("\\res\\ringtone.wav");
 					CreateDirectory(accountSettings.pathExe + _T("\\res"), NULL);
 					CFile f(ringPath, CFile::modeCreate | CFile::modeWrite);
 					f.Write(data, size);
@@ -2016,7 +2016,7 @@ BOOL CmainDlg::OnInitDialog()
 	imageListStatus->Add(LoadImageIcon(IDI_BUSY_STARRED));
 	imageListStatus->Add(LoadImageIcon(IDI_DEFAULT_STARRED));
 
-	CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
+CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
 	CRect tabRect;
 	tab->GetWindowRect(&tabRect);
 	ScreenToClient(&tabRect);
@@ -2028,33 +2028,49 @@ BOOL CmainDlg::OnInitDialog()
 	tabRect.bottom += lineRect.bottom;
 	tab->SetWindowPos(NULL, tabRect.left, tabRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 	imageListTabs = new CImageList();
-	imageListTabs->Create(16, 16, ILC_COLOR32 | ILC_MASK, 3, 3);
+	imageListTabs->Create(20, 20, ILC_COLOR32 | ILC_MASK, 3, 3);
 	imageListTabs->SetBkColor(MAXCARE_SURFACE);
 	imageListTabs->Add(LoadImageIcon(IDI_CALL_OUT));
 	imageListTabs->Add(LoadImageIcon(IDI_CALL_IN));
 	imageListTabs->Add(LoadImageIcon(IDI_CONTACT));
 	tab->SetImageList(imageListTabs);
-	tabItem.mask = TCIF_IMAGE | TCIF_PARAM;
+	tabItem.mask = TCIF_IMAGE | TCIF_PARAM | TCIF_TEXT;
 
-	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DEFAULT_STARRED));
-	m_ButtonMenu.SetWindowText(Translate(_T("Always on Top")));
+	// Set tab labels
+	tabItem.pszText = (LPTSTR)Translate(_T("الهاتف"));
+	tab->InsertItem(0, &tabItem);
+	tabItem.pszText = (LPTSTR)Translate(_T("السجل"));
+	tab->InsertItem(1, &tabItem);
+	tabItem.pszText = (LPTSTR)Translate(_T("جهات الاتصال"));
+	tab->InsertItem(2, &tabItem);
+
+	// Position buttons on the right side of the top bar
+	CRect clientRect;
+	GetClientRect(&clientRect);
+	int btnWidth = 36;
+	int btnHeight = 28;
+	int btnSpacing = 4;
+	int rightMargin = 8;
+	int topMargin = 2;
+
+	// Logout button (rightmost)
 	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-		CRect(_GLOBAL_WIDTH - 45, 1, _GLOBAL_WIDTH - 24, 15), this, IDC_MAIN_LOGOUT);
+		CRect(clientRect.right - rightMargin - btnWidth, topMargin, clientRect.right - rightMargin, topMargin + btnHeight), this, IDC_MAIN_LOGOUT);
 	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_EXIT));
-	m_ButtonLogout.SetWindowText(Translate(_T("Logout")));
-	m_ButtonMenu.SetWindowPos(NULL, _GLOBAL_WIDTH - 22, 1, 20, 14, SWP_NOZORDER);
+	m_ButtonLogout.SetToolTipText(Translate(_T("تسجيل الخروج")));
+
+	// Menu/Always on Top button (to the left of logout)
+	m_ButtonMenu.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+		CRect(clientRect.right - rightMargin - btnWidth * 2 - btnSpacing, topMargin, clientRect.right - rightMargin - btnWidth - btnSpacing, topMargin + btnHeight), this, IDC_MAIN_MENU);
+	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DEFAULT_STARRED));
+	m_ButtonMenu.SetToolTipText(Translate(_T("تثبيت في الأعلى")));
 
 	if (widthAdd) {
 		tabRect.right += widthAdd;
 		tab->SetWindowPos(NULL, 0, 0, tabRect.Width(), tabRect.Height(), SWP_NOZORDER | SWP_NOMOVE);
-		CRect btnRect;
-		m_ButtonMenu.GetWindowRect(btnRect);
-		ScreenToClient(btnRect);
-		m_ButtonMenu.SetWindowPos(NULL, btnRect.left + widthAdd, btnRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
-		m_ButtonLogout.SetWindowPos(NULL, btnRect.left + widthAdd - 22, btnRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 	}
 
-	AutoMove(tab->m_hWnd, 0, 0, 88, 0);
+	AutoMove(tab->m_hWnd, 0, 0, 100, 0);
 	AutoMove(m_ButtonMenu.m_hWnd, 100, 0, 0, 0);
 	AutoMove(m_ButtonLogout.m_hWnd, 100, 0, 0, 0);
 
@@ -2062,32 +2078,33 @@ BOOL CmainDlg::OnInitDialog()
 	CRect pageRect;
 
 	pageDialer = new Dialer(this);
+	tabItem.mask = TCIF_IMAGE | TCIF_PARAM;
 	tabItem.iImage = 0;
 	tabItem.lParam = (LPARAM)pageDialer;
-	tab->InsertItem(99, &tabItem);
+	tab->SetItem(0, &tabItem);
 	pageDialer->GetWindowRect(pageRect);
 	int pageWidth = pageRect.Width() + (clientRect.Width() - pageRect.Width()) / 3;
 	int offsetX = (clientRect.Width() - pageWidth) / 2;
 	pageDialer->SetWindowPos(NULL, offsetX, offset, pageWidth, pageRect.Height(), SWP_NOZORDER);
 	AutoMove(pageDialer->m_hWnd, 40, 40, 20, 20);
 
-		pageCalls = new Calls(this);
-		pageCalls->OnCreated();
-		tabItem.iImage = 1;
-		tabItem.lParam = (LPARAM)pageCalls;
-		tab->InsertItem(99, &tabItem);
-		pageCalls->GetWindowRect(pageRect);
-		pageCalls->SetWindowPos(NULL, 0, offset, pageRect.Width() + widthAdd, pageRect.Height() + heightAdd, SWP_NOZORDER);
-		AutoMove(pageCalls->m_hWnd, 0, 0, 100, 100);
+	pageCalls = new Calls(this);
+	pageCalls->OnCreated();
+	tabItem.iImage = 1;
+	tabItem.lParam = (LPARAM)pageCalls;
+	tab->SetItem(1, &tabItem);
+	pageCalls->GetWindowRect(pageRect);
+	pageCalls->SetWindowPos(NULL, 0, offset, pageRect.Width() + widthAdd, pageRect.Height() + heightAdd, SWP_NOZORDER);
+	AutoMove(pageCalls->m_hWnd, 0, 0, 100, 100);
 
-		pageContacts = new Contacts(this);
-		pageContacts->OnCreated();
-		tabItem.iImage = 2;
-		tabItem.lParam = (LPARAM)pageContacts;
-		tab->InsertItem(99, &tabItem);
-		pageContacts->GetWindowRect(pageRect);
-		pageContacts->SetWindowPos(NULL, 0, offset, pageRect.Width() + widthAdd, pageRect.Height() + heightAdd, SWP_NOZORDER);
-		AutoMove(pageContacts->m_hWnd, 0, 0, 100, 100);
+	pageContacts = new Contacts(this);
+	pageContacts->OnCreated();
+	tabItem.iImage = 2;
+	tabItem.lParam = (LPARAM)pageContacts;
+	tab->SetItem(2, &tabItem);
+	pageContacts->GetWindowRect(pageRect);
+	pageContacts->SetWindowPos(NULL, 0, offset, pageRect.Width() + widthAdd, pageRect.Height() + heightAdd, SWP_NOZORDER);
+	AutoMove(pageContacts->m_hWnd, 0, 0, 100, 100);
 
 	tab->SetCurSel(accountSettings.activeTab);
 
@@ -4305,12 +4322,12 @@ LRESULT CmainDlg::onPlayerPlay(WPARAM wParam, LPARAM lParam)
 			inCall = TRUE;
 			break;
 		case MSIP_SOUND_RINGTONE:
-			filename.Append(_T("res\\ring.wav"));
+			filename.Append(_T("res\\ringtone.wav"));
 			noLoop = FALSE;
 			inCall = FALSE;
 			break;
 		case MSIP_SOUND_RINGIN2:
-			filename.Append(_T("ringing2.wav"));
+			filename.Append(_T("ringing.wav"));
 			noLoop = TRUE;
 			inCall = TRUE;
 			break;
@@ -4681,18 +4698,12 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		COLORREF bg = bSelected ? MAXCARE_WHITE : MAXCARE_SURFACE;
 		pDC->FillSolidRect(&rc, bg);
 		
-		// Bottom line
+		// Bottom indicator line for selected tab
 		if (bSelected) {
 			CPen pen(PS_SOLID, 3, MAXCARE_TEAL);
 			CPen* pOldPen = pDC->SelectObject(&pen);
-			pDC->MoveTo(rc.left + 4, rc.bottom - 1);
-			pDC->LineTo(rc.right - 4, rc.bottom - 1);
-			pDC->SelectObject(pOldPen);
-		} else {
-			CPen pen(PS_SOLID, 1, MAXCARE_BORDER);
-			CPen* pOldPen = pDC->SelectObject(&pen);
-			pDC->MoveTo(rc.left, rc.bottom - 1);
-			pDC->LineTo(rc.right, rc.bottom - 1);
+			pDC->MoveTo(rc.left + 8, rc.bottom - 1);
+			pDC->LineTo(rc.right - 8, rc.bottom - 1);
 			pDC->SelectObject(pOldPen);
 		}
 		
@@ -4705,8 +4716,7 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 			int iw = ii.rcImage.right - ii.rcImage.left;
 			int ih = ii.rcImage.bottom - ii.rcImage.top;
 			int x = rc.left + (rc.Width() - iw) / 2;
-			int y = rc.top + (rc.Height() - ih) / 2 - 4;
-			if (bSelected) y -= 1;
+			int y = rc.top + 4;
 			pImg->Draw(pDC, tci.iImage, CPoint(x, y), ILD_TRANSPARENT);
 		}
 		
@@ -4717,14 +4727,14 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		tab->GetItem(nTab, &tci);
 		if (tci.pszText && *tci.pszText) {
 			CFont font;
-			font.CreateFont(-11, 0, 0, 0, bSelected ? FW_SEMIBOLD : FW_NORMAL, FALSE, FALSE, FALSE,
+			font.CreateFont(-12, 0, 0, 0, bSelected ? FW_SEMIBOLD : FW_NORMAL, FALSE, FALSE, FALSE,
 				DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 				CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Segoe UI"));
 			CFont* pOldFont = pDC->SelectObject(&font);
 			pDC->SetBkMode(TRANSPARENT);
 			pDC->SetTextColor(bSelected ? MAXCARE_TEAL : MAXCARE_TEXT_MUTED);
 			CRect textRc = rc;
-			textRc.top += 18; // below icon
+			textRc.top += 24; // below icon
 			pDC->DrawText(tci.pszText, textRc, DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
 			pDC->SelectObject(pOldFont);
 			font.DeleteObject();
@@ -4738,20 +4748,29 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		BOOL bPressed = (state & ODS_SELECTED);
 		BOOL bHot = (state & ODS_HOTLIGHT) || (state & ODS_FOCUS);
 		
-		COLORREF bg = MAXCARE_WHITE;
+		COLORREF bg = MAXCARE_SURFACE;
 		COLORREF border = MAXCARE_BORDER;
-		if (bPressed || bHot) { bg = MAXCARE_TEAL_SOFT; border = MAXCARE_TEAL; }
+		COLORREF iconColor = MAXCARE_TEXT_MUTED;
+		if (bPressed) {
+			bg = MAXCARE_TEAL_SOFT;
+			border = MAXCARE_TEAL;
+			iconColor = MAXCARE_TEAL;
+		} else if (bHot) {
+			bg = MAXCARE_TEAL_SOFT;
+			border = MAXCARE_TEAL;
+			iconColor = MAXCARE_TEAL;
+		}
 		
 		// Clear background
 		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
 		
 		// Rounded button background
-		CRect btnRc = rc; btnRc.DeflateRect(1, 1);
+		CRect btnRc = rc; btnRc.DeflateRect(2, 2);
 		CPen pen(PS_SOLID, 1, border);
 		CBrush brush(bg);
 		CPen* pOldPen = pDC->SelectObject(&pen);
 		CBrush* pOldBrush = pDC->SelectObject(&brush);
-		pDC->RoundRect(&btnRc, CPoint(6, 6));
+		pDC->RoundRect(&btnRc, CPoint(8, 8));
 		pDC->SelectObject(pOldPen);
 		pDC->SelectObject(pOldBrush);
 		
@@ -4759,7 +4778,7 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		CButton* pBtn = (CButton*)GetDlgItem(nIDCtl);
 		HICON hIcon = pBtn ? pBtn->GetIcon() : NULL;
 		if (hIcon) {
-			int iconSize = 12;
+			int iconSize = 16;
 			int x = rc.left + (rc.Width() - iconSize) / 2;
 			int y = rc.top + (rc.Height() - iconSize) / 2;
 			::DrawIconEx(pDC->m_hDC, x, y, hIcon, iconSize, iconSize, 0, NULL, DI_NORMAL);
