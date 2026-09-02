@@ -30,6 +30,7 @@ LoginDlg::LoginDlg(CWnd* pParent)
 	: CBaseDialog(LoginDlg::IDD, pParent)
 {
 	loginSuccess = false;
+	m_loadingDots = 0;
 }
 
 void LoginDlg::DoDataExchange(CDataExchange* pDX)
@@ -43,6 +44,7 @@ BEGIN_MESSAGE_MAP(LoginDlg, CBaseDialog)
 	ON_BN_CLICKED(IDC_LOGIN_BTN, &LoginDlg::OnBnClickedLogin)
 	ON_BN_CLICKED(IDCANCEL, &LoginDlg::OnBnClickedCancel)
 	ON_WM_CLOSE()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 BOOL LoginDlg::OnInitDialog()
@@ -67,6 +69,7 @@ BOOL LoginDlg::OnInitDialog()
 
 	UpdateData(FALSE);
 
+	GetDlgItem(IDC_LOGIN_STATUS)->SetWindowText(_T(""));
 	GetDlgItem(IDC_LOGIN_USERNAME)->SetFocus();
 
 	return FALSE;
@@ -81,6 +84,13 @@ void LoginDlg::OnBnClickedLogin()
 		return;
 	}
 
+	GetDlgItem(IDC_LOGIN_BTN)->EnableWindow(FALSE);
+	GetDlgItem(IDCANCEL)->EnableWindow(FALSE);
+	m_loadingDots = 0;
+	SetTimer(1, 400, NULL);
+
+	GetDlgItem(IDC_LOGIN_STATUS)->SetWindowText(Translate(_T("Connecting...")));
+
 	CString jsonData;
 	jsonData.Format(_T("{\"username\":\"%s\",\"password\":\"%s\"}"),
 		(LPCTSTR)EscapeLoginJson(m_username),
@@ -91,12 +101,18 @@ void LoginDlg::OnBnClickedLogin()
 
 	URLGetAsyncData result = URLGetSync(url, true, jsonData, headers);
 
+	KillTimer(1);
+	GetDlgItem(IDC_LOGIN_BTN)->EnableWindow(TRUE);
+	GetDlgItem(IDC_CANCEL)->EnableWindow(TRUE);
+
 	if (result.statusCode == 200) {
 		Json::Value response;
 		Json::Reader reader;
 		bool parsed = reader.parse((LPCSTR)CStringA(result.body), response);
 
 		if (parsed && response.get("ok", false).asBool()) {
+			GetDlgItem(IDC_LOGIN_STATUS)->SetWindowText(Translate(_T("Login successful!")));
+
 			Json::Value extension = response["extension"];
 			CString extVal;
 			if (extension.isString()) {
@@ -107,19 +123,18 @@ void LoginDlg::OnBnClickedLogin()
 			}
 			if (extVal.IsEmpty()) {
 				AfxMessageBox(Translate(_T("The account has no assigned extension.")), MB_ICONERROR);
+				GetDlgItem(IDC_LOGIN_STATUS)->SetWindowText(_T(""));
 				return;
 			}
 
 			Json::Value displayName = response["name"];
 			CString nameVal = displayName.isString() ? MSIP::Utf8DecodeUni(displayName.asCString()) : _T("");
 
-			// SIP server from API response (falls back to maxcare.local)
 			Json::Value sipServer = response["sip_server"];
-			CString sipServerVal = sipServer.isString() && !sipServer.asString().empty() 
-				? MSIP::Utf8DecodeUni(sipServer.asCString()) 
+			CString sipServerVal = sipServer.isString() && !sipServer.asString().empty()
+				? MSIP::Utf8DecodeUni(sipServer.asCString())
 				: _T("maxcare.local");
 
-			// الامتداد مؤقت لهذه الجلسة فقط؛ نحذف بيانات المستخدم السابق قبل التهيئة.
 			accountSettings.AccountDelete(1);
 
 			accountSettings.account.server = sipServerVal;
@@ -138,11 +153,11 @@ void LoginDlg::OnBnClickedLogin()
 			return;
 		}
 		else {
-			AfxMessageBox(Translate(_T("Invalid username or password.")), MB_ICONERROR);
+			GetDlgItem(IDC_LOGIN_STATUS)->SetWindowText(Translate(_T("Invalid username or password.")));
 		}
 	}
 	else {
-		AfxMessageBox(Translate(_T("Connection failed. Check server address.")), MB_ICONERROR);
+		GetDlgItem(IDC_LOGIN_STATUS)->SetWindowText(Translate(_T("Connection failed. Check server address.")));
 	}
 }
 
@@ -154,4 +169,17 @@ void LoginDlg::OnBnClickedCancel()
 void LoginDlg::OnClose()
 {
 	EndDialog(IDCANCEL);
+}
+
+void LoginDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == 1) {
+		m_loadingDots = (m_loadingDots + 1) % 4;
+		CString dots;
+		for (int i = 0; i < m_loadingDots; i++) dots += _T(".");
+		CString status;
+		status.Format(_T("Connecting%s"), dots);
+		GetDlgItem(IDC_LOGIN_STATUS)->SetWindowText(status);
+	}
+	CBaseDialog::OnTimer(nIDEvent);
 }

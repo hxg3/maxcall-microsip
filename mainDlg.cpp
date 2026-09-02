@@ -2038,23 +2038,22 @@ BOOL CmainDlg::OnInitDialog()
 	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DEFAULT_STARRED));
 	m_ButtonMenu.SetWindowText(Translate(_T("Always on Top")));
 	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_ICON | BS_FLAT,
-		CRect(_GLOBAL_WIDTH - 42, 2, _GLOBAL_WIDTH - 22, 15), this, IDC_MAIN_LOGOUT);
+		CRect(_GLOBAL_WIDTH - 38, 3, _GLOBAL_WIDTH - 20, 14), this, IDC_MAIN_LOGOUT);
 	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_EXIT));
 	m_ButtonLogout.SetWindowText(Translate(_T("Logout")));
-	m_ButtonMenu.SetWindowPos(NULL, _GLOBAL_WIDTH - 21, 2, 18, 13, SWP_NOZORDER);
+	m_ButtonMenu.SetWindowPos(NULL, _GLOBAL_WIDTH - 19, 3, 16, 11, SWP_NOZORDER);
 
 	if (widthAdd) {
-		CRect pageRect;
-		m_ButtonMenu.GetWindowRect(pageRect);
-		ScreenToClient(pageRect);
-		m_ButtonMenu.SetWindowPos(NULL, pageRect.left + widthAdd, pageRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
-		m_ButtonLogout.SetWindowPos(NULL, pageRect.left + widthAdd - 20, pageRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
-		//--
 		tabRect.right += widthAdd;
 		tab->SetWindowPos(NULL, 0, 0, tabRect.Width(), tabRect.Height(), SWP_NOZORDER | SWP_NOMOVE);
+		CRect btnRect;
+		m_ButtonMenu.GetWindowRect(btnRect);
+		ScreenToClient(btnRect);
+		m_ButtonMenu.SetWindowPos(NULL, btnRect.left + widthAdd, btnRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+		m_ButtonLogout.SetWindowPos(NULL, btnRect.left + widthAdd - 19, btnRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 	}
 
-	AutoMove(tab->m_hWnd, 0, 0, 100, 0);
+	AutoMove(tab->m_hWnd, 0, 0, 95, 0);
 	AutoMove(m_ButtonMenu.m_hWnd, 100, 0, 0, 0);
 	AutoMove(m_ButtonLogout.m_hWnd, 100, 0, 0, 0);
 

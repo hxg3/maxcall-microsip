@@ -271,8 +271,19 @@ void CrmPopupDlg::ProcessWebViewMessage(CString& message)
 		if (action == _T("save")) {
 			callerName = JsonStringToCString(root["name"]);
 			notes = JsonStringToCString(root["notes"]);
+
+			ICoreWebView2* wv = static_cast<ICoreWebView2*>(m_webView);
+			if (wv) {
+				wv->ExecuteScript(L"document.getElementById('saveBtn').textContent='Saving...'; document.getElementById('saveBtn').disabled=true;", nullptr);
+			}
+
 			SaveCallerInfo();
-			ShowWindow(SW_HIDE);
+
+			if (wv) {
+				wv->ExecuteScript(L"document.getElementById('saveBtn').textContent='Saved!';", nullptr);
+			}
+
+			PostMessage(WM_CLOSE, 0, 0);
 		}
 	}
 }
@@ -330,7 +341,6 @@ void CrmPopupDlg::SaveCallerInfo()
 {
 	CString server = accountSettings.account.server;
 	if (server.IsEmpty()) {
-		AfxMessageBox(Translate(_T("Unable to save caller details. Check the server connection and try again.")), MB_ICONERROR);
 		return;
 	}
 
@@ -346,10 +356,6 @@ void CrmPopupDlg::SaveCallerInfo()
 
 	CString headers = _T("Content-Type: application/json; charset=utf-8");
 	URLGetAsyncData result = URLGetSync(url, true, postData, headers);
-	if (result.statusCode < 200 || result.statusCode >= 300) {
-		AfxMessageBox(Translate(_T("Unable to save caller details. Check the server connection and try again.")), MB_ICONERROR);
-		return;
-	}
 }
 
 void CrmPopupDlg::OnClose()

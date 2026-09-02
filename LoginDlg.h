@@ -14,6 +14,7 @@ public:
 	CString m_username;
 	CString m_password;
 	bool loginSuccess;
+	int m_loadingDots;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);
@@ -26,4 +27,5 @@ public:
 	afx_msg void OnBnClickedLogin();
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnClose();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };

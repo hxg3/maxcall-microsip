@@ -25,7 +25,6 @@
 #include "settings.h"
 #include "langpack.h"
 #include "LoginDlg.h"
-#include "SplashScreen.h"
 
 #include "Strsafe.h"
 
@@ -318,20 +317,6 @@ BOOL CmicrosipApp::InitInstance()
 			return FALSE;
 		}
 	}
-
-	CSplashScreen splash;
-	splash.Create(NULL);
-
-	MSG msg;
-	DWORD splashStart = GetTickCount();
-	while (GetTickCount() - splashStart < 3000) {
-		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-		Sleep(10);
-	}
-	splash.Close();
 
 	CmainDlg *mainDlg = new CmainDlg;
 	m_pMainWnd = mainDlg;

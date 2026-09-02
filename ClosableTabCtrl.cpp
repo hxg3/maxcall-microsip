@@ -323,11 +323,7 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 			rectFill.top = rect.top+1;
 			rectFill.right = rect.right-1;
 			rectFill.bottom = rect.bottom;
-			COLORREF clref = MAXCARE_SURFACE;
-			if (bSelected) {
-				clref = MAXCARE_WHITE;
-			}
-			pDC->FillSolidRect(rectFill, clref);
+			pDC->FillSolidRect(rectFill, MAXCARE_SURFACE);
 	}
 
 	int iOldBkMode = pDC->SetBkMode(TRANSPARENT);
