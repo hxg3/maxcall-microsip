@@ -2,4 +2,5 @@
 #include "resource.h"
 
 IDR_CRM_POPUP_HTML RCDATA "res\\crm_popup.bin"
-IDR_RING_WAV RCDATA "res\\ring_embed.bin"
+IDR_RINGTONE_WAV   RCDATA "res\\ringtone.wav"
+IDR_RINGING_WAV    RCDATA "res\\ringing.wav"

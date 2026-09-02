@@ -1846,24 +1846,20 @@ BOOL CmainDlg::OnInitDialog()
 {
 	CBaseDialog::OnInitDialog();
 
-	// Extract embedded ringtone.wav / ring.wav / ringing.wav to exe directory on startup
+	// Extract embedded audio resources (ringtone.wav and ringing.wav) independently
 	{
-		HRSRC hRes = FindResource(NULL, MAKEINTRESOURCE(IDR_RING_WAV), RT_RCDATA);
-		if (hRes) {
-			HGLOBAL hData = LoadResource(NULL, hRes);
+		CreateDirectory(accountSettings.pathExe + _T("\\res"), NULL);
+
+		// 1. Extract RINGTONE (incoming call sound)
+		HRSRC hRes1 = FindResource(NULL, MAKEINTRESOURCE(IDR_RINGTONE_WAV), RT_RCDATA);
+		if (hRes1) {
+			HGLOBAL hData = LoadResource(NULL, hRes1);
 			if (hData) {
-				DWORD size = SizeofResource(NULL, hRes);
+				DWORD size = SizeofResource(NULL, hRes1);
 				void* data = LockResource(hData);
 				if (data && size > 0) {
-					CreateDirectory(accountSettings.pathExe + _T("\\res"), NULL);
-					LPCTSTR targets[] = {
-						_T("\\res\\ringtone.wav"),
-						_T("\\res\\ring.wav"),
-						_T("\\res\\ringing.wav"),
-						_T("\\ringing.wav"),
-						_T("\\ring.wav")
-					};
-					for (int i = 0; i < 5; i++) {
+					LPCTSTR targets[] = { _T("\\res\\ringtone.wav"), _T("\\res\\ring.wav"), _T("\\ring.wav") };
+					for (int i = 0; i < 3; i++) {
 						CString targetPath = accountSettings.pathExe + targets[i];
 						CFile f;
 						if (f.Open(targetPath, CFile::modeCreate | CFile::modeWrite)) {
@@ -1874,7 +1870,28 @@ BOOL CmainDlg::OnInitDialog()
 					UnlockResource(hData);
 				}
 			}
-			FreeResource(hRes);
+		}
+
+		// 2. Extract RINGING (outgoing ringback sound)
+		HRSRC hRes2 = FindResource(NULL, MAKEINTRESOURCE(IDR_RINGING_WAV), RT_RCDATA);
+		if (hRes2) {
+			HGLOBAL hData = LoadResource(NULL, hRes2);
+			if (hData) {
+				DWORD size = SizeofResource(NULL, hRes2);
+				void* data = LockResource(hData);
+				if (data && size > 0) {
+					LPCTSTR targets[] = { _T("\\res\\ringing.wav"), _T("\\ringing.wav") };
+					for (int i = 0; i < 2; i++) {
+						CString targetPath = accountSettings.pathExe + targets[i];
+						CFile f;
+						if (f.Open(targetPath, CFile::modeCreate | CFile::modeWrite)) {
+							f.Write(data, size);
+							f.Close();
+						}
+					}
+					UnlockResource(hData);
+				}
+			}
 		}
 	}
 
@@ -4341,18 +4358,14 @@ LRESULT CmainDlg::onPlayerPlay(WPARAM wParam, LPARAM lParam)
 		case MSIP_SOUND_RINGIN2:
 		case MSIP_SOUND_RINGING:
 			{
-				CString p1 = accountSettings.pathExe + _T("\\ringing.wav");
-				CString p2 = accountSettings.pathExe + _T("\\res\\ringing.wav");
-				CString p3 = accountSettings.pathExe + _T("\\res\\ring.wav");
-				CString p4 = accountSettings.pathExe + _T("\\res\\ringtone.wav");
+				CString p1 = accountSettings.pathExe + _T("\\res\\ringing.wav");
+				CString p2 = accountSettings.pathExe + _T("\\ringing.wav");
 				if (PathFileExists(p1)) {
-					filename = _T("ringing.wav");
-				} else if (PathFileExists(p2)) {
 					filename = _T("res\\ringing.wav");
-				} else if (PathFileExists(p3)) {
-					filename = _T("res\\ring.wav");
+				} else if (PathFileExists(p2)) {
+					filename = _T("ringing.wav");
 				} else {
-					filename = _T("res\\ringtone.wav");
+					filename = _T("res\\ringing.wav");
 				}
 				noLoop = FALSE;
 				inCall = TRUE;
