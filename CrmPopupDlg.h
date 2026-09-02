@@ -33,6 +33,7 @@ protected:
 	virtual void TabFocusSet() {}
 	virtual bool GotoTab(int i, CTabCtrl* tab = NULL) { return true; }
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnClose();
 	afx_msg LRESULT OnWebViewReady(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnWebViewMessage(WPARAM wParam, LPARAM lParam);
 	DECLARE_MESSAGE_MAP()
@@ -47,7 +48,6 @@ private:
 	void UpdateWebView();
 	void ProcessWebViewMessage(CString& message);
 	void SaveCallerInfo();
-	void OnClose();
 
 	static CString JsonStringToCString(const Json::Value& value);
 	static CString EscapeJson(const CString& input);

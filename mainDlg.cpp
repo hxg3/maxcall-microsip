@@ -2053,7 +2053,7 @@ BOOL CmainDlg::OnInitDialog()
 		m_ButtonLogout.SetWindowPos(NULL, btnRect.left + widthAdd - 19, btnRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 	}
 
-	AutoMove(tab->m_hWnd, 0, 0, 95, 0);
+	AutoMove(tab->m_hWnd, 0, 0, 100, 0);
 	AutoMove(m_ButtonMenu.m_hWnd, 100, 0, 0, 0);
 	AutoMove(m_ButtonLogout.m_hWnd, 100, 0, 0, 0);
 

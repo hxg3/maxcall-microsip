@@ -137,6 +137,7 @@ void CrmPopupDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CrmPopupDlg, CBaseDialog)
 	ON_WM_SIZE()
+	ON_WM_CLOSE()
 	ON_MESSAGE(WM_WEBVIEW_READY, &CrmPopupDlg::OnWebViewReady)
 	ON_MESSAGE(WM_WEBVIEW_MESSAGE, &CrmPopupDlg::OnWebViewMessage)
 END_MESSAGE_MAP()
@@ -240,6 +241,8 @@ HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller
 				}
 				FreeResource(hRes);
 			}
+
+			PostMessage(WM_WEBVIEW_READY, 0, 0);
 		}
 	}
 	return S_OK;
@@ -247,7 +250,7 @@ HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller
 
 LRESULT CrmPopupDlg::OnWebViewReady(WPARAM wParam, LPARAM lParam)
 {
-	UpdateWebView();
+	LoadCallerInfo();
 	return 0;
 }
 
@@ -272,18 +275,9 @@ void CrmPopupDlg::ProcessWebViewMessage(CString& message)
 			callerName = JsonStringToCString(root["name"]);
 			notes = JsonStringToCString(root["notes"]);
 
-			ICoreWebView2* wv = static_cast<ICoreWebView2*>(m_webView);
-			if (wv) {
-				wv->ExecuteScript(L"document.getElementById('saveBtn').textContent='Saving...'; document.getElementById('saveBtn').disabled=true;", nullptr);
-			}
-
 			SaveCallerInfo();
 
-			if (wv) {
-				wv->ExecuteScript(L"document.getElementById('saveBtn').textContent='Saved!';", nullptr);
-			}
-
-			PostMessage(WM_CLOSE, 0, 0);
+			ShowWindow(SW_HIDE);
 		}
 	}
 }

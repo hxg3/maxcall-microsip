@@ -24,8 +24,8 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 CLASS _GLOBAL_NAME
 BEGIN
 	CONTROL         "",IDC_MAIN_TAB,"SysTabControl32", WS_TABSTOP, 0, 0
-, _GLOBAL_WIDTH - 40 , 16
-	PUSHBUTTON      "", IDC_MAIN_MENU, _GLOBAL_WIDTH - 20, 3
+, _GLOBAL_WIDTH + 2 , 16
+	PUSHBUTTON      "", IDC_MAIN_MENU, _GLOBAL_WIDTH - 19, 3
 , 16, 11, BS_ICON
 END
 //---------------------DIALER---------------------------------
