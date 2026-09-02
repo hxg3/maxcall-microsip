@@ -22,7 +22,7 @@
 
 #define STR_SZ 256
 
-#define _GLOBAL_WIDTH 162
+#define _GLOBAL_WIDTH 180
 
 //#ifndef _GLOBAL_RINGIN_WIDTH
 #define _GLOBAL_RINGIN_WIDTH 180

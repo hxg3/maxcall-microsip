@@ -2027,7 +2027,7 @@ BOOL CmainDlg::OnInitDialog()
 	imageListStatus->Add(LoadImageIcon(IDI_BUSY_STARRED));
 	imageListStatus->Add(LoadImageIcon(IDI_DEFAULT_STARRED));
 
-CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
+	CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
 	CRect tabRect;
 	tab->GetWindowRect(&tabRect);
 	ScreenToClient(&tabRect);
@@ -2037,9 +2037,23 @@ CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
 	MapDialogRect(&lineRect);
 	tabRect.top += lineRect.bottom;
 	tabRect.bottom += lineRect.bottom;
-	tab->SetWindowPos(NULL, tabRect.left, tabRect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+
+	// Position buttons on the right side of the top bar
+	int btnWidth = 28;
+	int btnHeight = 26;
+	int btnSpacing = 4;
+	int rightMargin = 6;
+	int topMargin = 2;
+
+	int buttonsAreaWidth = (btnWidth * 2) + btnSpacing + rightMargin;
+	int maxTabWidth = clientRect.right - buttonsAreaWidth - 4;
+
+	// Position the tab control to leave clean space for top action buttons
+	tab->SetWindowPos(NULL, tabRect.left, tabRect.top, maxTabWidth, tabRect.Height(), SWP_NOZORDER);
+	tab->SetPadding(CPoint(6, 2));
+
 	imageListTabs = new CImageList();
-	imageListTabs->Create(20, 20, ILC_COLOR32 | ILC_MASK, 3, 3);
+	imageListTabs->Create(16, 16, ILC_COLOR32 | ILC_MASK, 3, 3);
 	imageListTabs->SetBkColor(MAXCARE_SURFACE);
 	imageListTabs->Add(LoadImageIcon(IDI_CALL_OUT));
 	imageListTabs->Add(LoadImageIcon(IDI_CALL_IN));
@@ -2047,35 +2061,25 @@ CTabCtrl* tab = (CTabCtrl*)GetDlgItem(IDC_MAIN_TAB);
 	tab->SetImageList(imageListTabs);
 	tabItem.mask = TCIF_IMAGE | TCIF_PARAM | TCIF_TEXT;
 
-	// Set tab labels
-	tabItem.pszText = (LPTSTR)Translate(_T("الهاتف"));
+	// Set tab labels with explicit Unicode wide strings to avoid code page & hash corruptions
+	tabItem.pszText = (LPTSTR)L"\x0627\x0644\x0647\x0627\x062A\x0641"; // الهاتف
 	tab->InsertItem(0, &tabItem);
-	tabItem.pszText = (LPTSTR)Translate(_T("السجل"));
+	tabItem.pszText = (LPTSTR)L"\x0627\x0644\x0633\x062C\x0644"; // السجل
 	tab->InsertItem(1, &tabItem);
-	tabItem.pszText = (LPTSTR)Translate(_T("جهات الاتصال"));
+	tabItem.pszText = (LPTSTR)L"\x062C\x0647\x0627\x062A \x0627\x0644\x0627\x062A\x0635\x0627\x0644"; // جهات الاتصال
 	tab->InsertItem(2, &tabItem);
 
-	// Position buttons on the right side of the top bar
-	int btnWidth = 36;
-	int btnHeight = 28;
-	int btnSpacing = 4;
-	int rightMargin = 8;
-	int topMargin = 2;
-
-	// Logout button (rightmost)
+	// Logout button (rightmost) - bring to top of Z-order
 	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
 		CRect(clientRect.right - rightMargin - btnWidth, topMargin, clientRect.right - rightMargin, topMargin + btnHeight), this, IDC_MAIN_LOGOUT);
 	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_EXIT));
+	m_ButtonLogout.SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
-	// Menu/Always on Top button (to the left of logout)
+	// Menu button (to the left of logout) - bring to top of Z-order
 	m_ButtonMenu.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
 		CRect(clientRect.right - rightMargin - btnWidth * 2 - btnSpacing, topMargin, clientRect.right - rightMargin - btnWidth - btnSpacing, topMargin + btnHeight), this, IDC_MAIN_MENU);
 	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DEFAULT_STARRED));
-
-	if (widthAdd) {
-		tabRect.right += widthAdd;
-		tab->SetWindowPos(NULL, 0, 0, tabRect.Width(), tabRect.Height(), SWP_NOZORDER | SWP_NOMOVE);
-	}
+	m_ButtonMenu.SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
 	AutoMove(tab->m_hWnd, 0, 0, 100, 0);
 	AutoMove(m_ButtonMenu.m_hWnd, 100, 0, 0, 0);
@@ -4735,7 +4739,7 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 			IMAGEINFO ii; pImg->GetImageInfo(tci.iImage, &ii);
 			iconWidth = ii.rcImage.right - ii.rcImage.left;
 			int ih = ii.rcImage.bottom - ii.rcImage.top;
-			int x = rc.left + 12;
+			int x = rc.left + 6;
 			int y = rc.top + (rc.Height() - ih) / 2;
 			pImg->Draw(pDC, tci.iImage, CPoint(x, y), ILD_TRANSPARENT);
 		}
@@ -4747,14 +4751,14 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		tab->GetItem(nTab, &tci);
 		if (tci.pszText && *tci.pszText) {
 			CFont font;
-			font.CreateFont(-13, 0, 0, 0, bSelected ? FW_BOLD : FW_SEMIBOLD, FALSE, FALSE, FALSE,
+			font.CreateFont(-12, 0, 0, 0, bSelected ? FW_BOLD : FW_SEMIBOLD, FALSE, FALSE, FALSE,
 				DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 				CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Segoe UI"));
 			CFont* pOldFont = pDC->SelectObject(&font);
 			pDC->SetBkMode(TRANSPARENT);
 			pDC->SetTextColor(textCol);
 			CRect textRc = rc;
-			textRc.left += (iconWidth > 0 ? iconWidth + 18 : 12);
+			textRc.left += (iconWidth > 0 ? iconWidth + 9 : 6);
 			pDC->DrawText(tci.pszText, textRc, DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
 			pDC->SelectObject(pOldFont);
 			font.DeleteObject();
@@ -4765,8 +4769,8 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		if (bSelected) {
 			CRect indicatorRc = rc;
 			indicatorRc.top = indicatorRc.bottom - 3; // 3px high line
-			indicatorRc.left += 8; // subtle padding
-			indicatorRc.right -= 8;
+			indicatorRc.left += 4; // subtle padding
+			indicatorRc.right -= 4;
 			pDC->FillSolidRect(&indicatorRc, MAXCARE_TEAL);
 		}
 		
