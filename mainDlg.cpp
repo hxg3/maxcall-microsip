@@ -2111,7 +2111,7 @@ void CmainDlg::InitUI()
 {
 	onMWIInfo(0, 0); // voicemail button
 	SetPaneText2();
-	SetWindowText(_T(_GLOBAL_NAME_NICE " v5.0"));
+	SetWindowText(_T(_GLOBAL_NAME_NICE " v5.1"));
 	UpdateWindowText();
 	pageDialer->SetName();
 }
@@ -3436,7 +3436,7 @@ void CmainDlg::PJAccountAddRaw()
 {
 	CString str;
 
-	CString title = _T(_GLOBAL_NAME_NICE " v5.0");
+	CString title = _T(_GLOBAL_NAME_NICE " v5.1");
 	CString titleAdder;
 	CString usernameLocal;
 	usernameLocal = accountSettings.account.username;
