@@ -2110,7 +2110,7 @@ void CmainDlg::InitUI()
 {
 	onMWIInfo(0, 0); // voicemail button
 	SetPaneText2();
-	SetWindowText(_T(_GLOBAL_NAME_NICE));
+	SetWindowText(_T(_GLOBAL_NAME_NICE " v4.0"));
 	UpdateWindowText();
 	pageDialer->SetName();
 }
