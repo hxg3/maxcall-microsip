@@ -34,7 +34,6 @@ StatusBar::~StatusBar()
 BEGIN_MESSAGE_MAP(StatusBar, CStatusBar)
 	ON_WM_LBUTTONUP()
 	ON_WM_MOUSEMOVE()
-	ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, OnCustomDraw)
 END_MESSAGE_MAP()
 
 void StatusBar::OnLButtonUp(UINT nFlags, CPoint point)
@@ -43,21 +42,4 @@ void StatusBar::OnLButtonUp(UINT nFlags, CPoint point)
 
 void StatusBar::OnMouseMove(UINT nFlags, CPoint point)
 {
-}
-
-LRESULT StatusBar::OnCustomDraw(WPARAM wParam, LPARAM lParam)
-{
-	NMTBCUSTOMDRAW *pNM = reinterpret_cast<NMTBCUSTOMDRAW*>(lParam);
-	if (!pNM) return CDRF_DODEFAULT;
-
-	switch (pNM->nmcd.dwDrawStage)
-	{
-	case CDDS_PREPAINT:
-		return CDRF_NOTIFYITEMDRAW;
-	case CDDS_ITEMPREPAINT:
-		pNM->clrBtnFace = MAXCARE_SURFACE;
-		pNM->clrText = MAXCARE_TEXT_SEC;
-		return CDRF_NEWFONT;
-	}
-	return CDRF_DODEFAULT;
 }

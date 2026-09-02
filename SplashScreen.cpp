@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "SplashScreen.h"
 #include "define.h"
+#include "Strsafe.h"
+#include "Resource.h"
 
 BEGIN_MESSAGE_MAP(CSplashScreen, CWnd)
 	ON_WM_PAINT()
@@ -120,7 +122,6 @@ void CSplashScreen::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == 1) {
 		KillTimer(1);
-		AfxGetMainWnd()->PostMessage(WM_CLOSE, 0, 0);
 		PostMessage(WM_CLOSE, 0, 0);
 	}
 }
