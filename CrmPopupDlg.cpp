@@ -286,10 +286,13 @@ void CrmPopupDlg::ProcessWebViewMessage(CString& message)
 
 			if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "Calling SaveCallerInfo\n"); fclose(fp); }
 			SaveCallerInfo();
-
-			if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "SaveCallerInfo returned, hiding window\n"); fclose(fp); }
+			// لا نُخفي النافذة هنا — ننتظر نتيجة الـ HTTP POST في OnCrmSaveResult
+			if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "SaveCallerInfo returned, waiting for server response\n"); fclose(fp); }
+			return;
+		}
+		if (action == _T("dismiss")) {
+			if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "Action is dismiss\n"); fclose(fp); }
 			ShowWindow(SW_HIDE);
-			if(fp = fopen("maxcall_debug.log", "a")) { fprintf(fp, "ProcessWebViewMessage done\n"); fclose(fp); }
 			return;
 		}
 	}
@@ -401,9 +404,19 @@ LRESULT CrmPopupDlg::OnCrmLoadResult(WPARAM wParam, LPARAM lParam)
 LRESULT CrmPopupDlg::OnCrmSaveResult(WPARAM wParam, LPARAM lParam)
 {
 	URLGetAsyncData* result = (URLGetAsyncData*)wParam;
+	FILE* fp = fopen("maxcall_debug.log", "a");
+	if(fp) { fprintf(fp, "OnCrmSaveResult called, statusCode=%lu\n", result ? result->statusCode : 0); fclose(fp); }
 	if (result) {
-		if (result->statusCode >= 200 && result->statusCode < 300) {
-			UpdateWebView();
+		bool ok = (result->statusCode >= 200 && result->statusCode < 300);
+		// أخبر الـ JavaScript بنتيجة الحفظ
+		if (m_webView && ::IsWindow(m_hWnd)) {
+			CString js;
+			js.Format(_T("notifySaveResult(%s)"), ok ? _T("true") : _T("false"));
+			ICoreWebView2* wv = static_cast<ICoreWebView2*>(m_webView);
+			if (wv) {
+				CStringW wJs(js);
+				wv->ExecuteScript(wJs.GetString(), nullptr);
+			}
 		}
 		delete result;
 	}
