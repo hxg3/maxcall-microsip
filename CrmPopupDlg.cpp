@@ -104,6 +104,38 @@ public:
 	HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Controller* controller) override;
 };
 
+// NavigationCompleted callback — fires after HTML is fully loaded and JS is ready
+class NavCompletedHandler : public ICoreWebView2NavigationCompletedEventHandler
+{
+public:
+	CrmPopupDlg* m_dlg;
+	ULONG m_refCount;
+
+	NavCompletedHandler(CrmPopupDlg* dlg) : m_dlg(dlg), m_refCount(1) {}
+
+	ULONG STDMETHODCALLTYPE AddRef() override { return ++m_refCount; }
+	ULONG STDMETHODCALLTYPE Release() override {
+		ULONG count = --m_refCount;
+		if (count == 0) delete this;
+		return count;
+	}
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
+		if (riid == IID_IUnknown || riid == IID_ICoreWebView2NavigationCompletedEventHandler) {
+			*ppv = static_cast<ICoreWebView2NavigationCompletedEventHandler*>(this);
+			AddRef();
+			return S_OK;
+		}
+		*ppv = nullptr;
+		return E_NOINTERFACE;
+	}
+	HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NavigationCompletedEventArgs* args) override {
+		if (m_dlg && ::IsWindow(m_dlg->m_hWnd)) {
+			::PostMessage(m_dlg->m_hWnd, WM_WEBVIEW_READY, 0, 0);
+		}
+		return S_OK;
+	}
+};
+
 CrmPopupDlg::CrmPopupDlg(CWnd* pParent)
 	: CBaseDialog(CrmPopupDlg::IDD, pParent)
 {
@@ -226,6 +258,12 @@ HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller
 				new WebMessageReceivedHandler(m_dlg),
 				&token);
 
+			// نسجّل حدث NavigationCompleted لنعرف متى انتهى تحميل الـ HTML فعلياً
+			EventRegistrationToken navToken;
+			wv->add_NavigationCompleted(
+				new NavCompletedHandler(m_dlg),
+				&navToken);
+
 			HRSRC hRes = FindResource(NULL, MAKEINTRESOURCE(IDR_CRM_POPUP_HTML), RT_RCDATA);
 			if (hRes) {
 				HGLOBAL hData = LoadResource(NULL, hRes);
@@ -245,8 +283,7 @@ HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller
 				}
 				FreeResource(hRes);
 			}
-
-			::PostMessage(m_dlg->m_hWnd, WM_WEBVIEW_READY, 0, 0);
+			// لا نرسل WM_WEBVIEW_READY هنا — NavCompletedHandler هو من يرسله بعد اكتمال التحميل
 		}
 	}
 	return S_OK;
