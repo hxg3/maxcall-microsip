@@ -2052,21 +2052,12 @@ BOOL CmainDlg::OnInitDialog()
 	tab->SetWindowPos(NULL, tabRect.left, tabRect.top, maxTabWidth, tabRect.Height(), SWP_NOZORDER);
 	tab->SetPadding(CPoint(6, 2));
 
-	imageListTabs = new CImageList();
-	imageListTabs->Create(16, 16, ILC_COLOR32 | ILC_MASK, 3, 3);
-	imageListTabs->SetBkColor(MAXCARE_SURFACE);
-	imageListTabs->Add(LoadImageIcon(IDI_CALL_OUT));
-	imageListTabs->Add(LoadImageIcon(IDI_CALL_IN));
-	imageListTabs->Add(LoadImageIcon(IDI_CONTACT));
-	tab->SetImageList(imageListTabs);
-	tabItem.mask = TCIF_IMAGE | TCIF_PARAM | TCIF_TEXT;
+	tab->SetItemSize(CSize(44, 26));
 
-	// Set tab labels with explicit Unicode wide strings to avoid code page & hash corruptions
-	tabItem.pszText = (LPTSTR)L"\x0627\x0644\x0647\x0627\x062A\x0641"; // الهاتف
+	tabItem.mask = TCIF_PARAM | TCIF_TEXT;
+	tabItem.pszText = (LPTSTR)_T("");
 	tab->InsertItem(0, &tabItem);
-	tabItem.pszText = (LPTSTR)L"\x0627\x0644\x0633\x062C\x0644"; // السجل
 	tab->InsertItem(1, &tabItem);
-	tabItem.pszText = (LPTSTR)L"\x062C\x0647\x0627\x062A \x0627\x0644\x0627\x062A\x0635\x0627\x0644"; // جهات الاتصال
 	tab->InsertItem(2, &tabItem);
 
 	// Logout button (rightmost) - bring to top of Z-order
@@ -4716,6 +4707,83 @@ HBRUSH CmainDlg::OnCtlColor(CDC* pDC, CWnd *pWnd, UINT nCtlColor)
 	return br;
 }
 
+static void DrawModernVectorIcon(CDC* pDC, int iconType, CRect rc, COLORREF color, BOOL bSelected)
+{
+	int cx = rc.left + rc.Width() / 2;
+	int cy = rc.top + rc.Height() / 2;
+	
+	CPen pen(PS_SOLID, bSelected ? 2 : 1, color);
+	CPen* pOldPen = pDC->SelectObject(&pen);
+
+	CBrush nullBrush;
+	nullBrush.CreateStockObject(NULL_BRUSH);
+	CBrush* pOldBrush = pDC->SelectObject(&nullBrush);
+
+	switch (iconType) {
+	case 0: // Phone Tab (Receiver)
+		{
+			CPen p(PS_SOLID, 2, color);
+			pDC->SelectObject(&p);
+			pDC->MoveTo(cx - 5, cy - 4);
+			pDC->LineTo(cx - 3, cy - 6);
+			pDC->LineTo(cx - 1, cy - 4);
+			pDC->LineTo(cx - 3, cy - 2);
+			pDC->LineTo(cx + 2, cy + 3);
+			pDC->LineTo(cx + 4, cy + 1);
+			pDC->LineTo(cx + 6, cy + 3);
+			pDC->LineTo(cx + 4, cy + 5);
+			pDC->LineTo(cx + 2, cy + 5);
+			pDC->LineTo(cx - 5, cy - 2);
+			pDC->LineTo(cx - 5, cy - 4);
+		}
+		break;
+	case 1: // Call History / Log Tab (Clock)
+		{
+			CPen p(PS_SOLID, 2, color);
+			pDC->SelectObject(&p);
+			pDC->Ellipse(cx - 7, cy - 7, cx + 7, cy + 7);
+			pDC->MoveTo(cx, cy);
+			pDC->LineTo(cx, cy - 4);
+			pDC->MoveTo(cx, cy);
+			pDC->LineTo(cx + 4, cy);
+		}
+		break;
+	case 2: // Contacts Tab (User)
+		{
+			CPen p(PS_SOLID, 2, color);
+			pDC->SelectObject(&p);
+			// Head
+			pDC->Ellipse(cx - 3, cy - 7, cx + 3, cy - 1);
+			// Shoulders Arc
+			pDC->Arc(cx - 7, cy, cx + 7, cy + 10, cx + 7, cy + 6, cx - 7, cy + 6);
+		}
+		break;
+	case 3: // Menu Button (3 Vertical Dots)
+		{
+			CBrush dotBrush(color);
+			pDC->SelectObject(&dotBrush);
+			CPen nullPen(PS_NULL, 0, RGB(0,0,0));
+			pDC->SelectObject(&nullPen);
+			pDC->Ellipse(cx - 2, cy - 6 - 2, cx + 2, cy - 6 + 2);
+			pDC->Ellipse(cx - 2, cy - 2, cx + 2, cy + 2);
+			pDC->Ellipse(cx - 2, cy + 6 - 2, cx + 2, cy + 6 + 2);
+		}
+		break;
+	case 4: // Logout / Exit Button (Power Symbol)
+		{
+			CPen p(PS_SOLID, 2, color);
+			pDC->SelectObject(&p);
+			pDC->Arc(cx - 6, cy - 5, cx + 6, cy + 7, cx + 3, cy - 4, cx - 3, cy - 4);
+			pDC->MoveTo(cx, cy - 7);
+			pDC->LineTo(cx, cy + 1);
+		}
+		break;
+	}
+
+	pDC->SelectObject(pOldPen);
+	pDC->SelectObject(pOldBrush);
+}
+
 void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	if (nIDCtl == IDC_MAIN_TAB) {
@@ -4728,48 +4796,34 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		// Fill background with top bar surface color
 		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
 		
-		COLORREF textCol = bSelected ? MAXCARE_TEAL : MAXCARE_TEXT_SEC;
+		COLORREF iconCol = bSelected ? MAXCARE_TEAL : MAXCARE_TEXT_MUTED;
 		
-		// Draw Tab Icon
-		TC_ITEM tci; tci.mask = TCIF_IMAGE;
-		tab->GetItem(nTab, &tci);
-		CImageList* pImg = tab->GetImageList();
-		int iconWidth = 0;
-		if (pImg && tci.iImage >= 0) {
-			IMAGEINFO ii; pImg->GetImageInfo(tci.iImage, &ii);
-			iconWidth = ii.rcImage.right - ii.rcImage.left;
-			int ih = ii.rcImage.bottom - ii.rcImage.top;
-			int x = rc.left + 6;
-			int y = rc.top + (rc.Height() - ih) / 2;
-			pImg->Draw(pDC, tci.iImage, CPoint(x, y), ILD_TRANSPARENT);
+		// Hover effect on inactive tab
+		if (!bSelected) {
+			CPoint pt;
+			GetCursorPos(&pt);
+			tab->ScreenToClient(&pt);
+			if (rc.PtInRect(pt)) {
+				iconCol = MAXCARE_TEXT;
+				CRect hoverRc = rc; hoverRc.DeflateRect(2, 2);
+				CPen nullPen(PS_NULL, 0, RGB(0,0,0));
+				CBrush hoverBrush(MAXCARE_TEAL_SOFT);
+				CPen* pOldPen = pDC->SelectObject(&nullPen);
+				CBrush* pOldBrush = pDC->SelectObject(&hoverBrush);
+				pDC->RoundRect(&hoverRc, CPoint(6, 6));
+				pDC->SelectObject(pOldPen);
+				pDC->SelectObject(pOldBrush);
+			}
 		}
+
+		// Render crisp vector icon (0=Phone, 1=History, 2=Contacts)
+		DrawModernVectorIcon(pDC, nTab, rc, iconCol, bSelected);
 		
-		// Draw Tab Text Label
-		tci.mask = TCIF_TEXT;
-		tci.pszText = new TCHAR[256];
-		tci.cchTextMax = 256;
-		tab->GetItem(nTab, &tci);
-		if (tci.pszText && *tci.pszText) {
-			CFont font;
-			font.CreateFont(-12, 0, 0, 0, bSelected ? FW_BOLD : FW_SEMIBOLD, FALSE, FALSE, FALSE,
-				DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-				CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Segoe UI"));
-			CFont* pOldFont = pDC->SelectObject(&font);
-			pDC->SetBkMode(TRANSPARENT);
-			pDC->SetTextColor(textCol);
-			CRect textRc = rc;
-			textRc.left += (iconWidth > 0 ? iconWidth + 9 : 6);
-			pDC->DrawText(tci.pszText, textRc, DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
-			pDC->SelectObject(pOldFont);
-			font.DeleteObject();
-		}
-		delete[] tci.pszText;
-		
-		// Draw active tab indicator (smooth bottom line)
+		// Draw active tab indicator (smooth 3px bottom line)
 		if (bSelected) {
 			CRect indicatorRc = rc;
-			indicatorRc.top = indicatorRc.bottom - 3; // 3px high line
-			indicatorRc.left += 4; // subtle padding
+			indicatorRc.top = indicatorRc.bottom - 3;
+			indicatorRc.left += 4;
 			indicatorRc.right -= 4;
 			pDC->FillSolidRect(&indicatorRc, MAXCARE_TEAL);
 		}
@@ -4782,30 +4836,29 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		BOOL bPressed = (state & ODS_SELECTED);
 		BOOL bHot = (state & ODS_HOTLIGHT) || (state & ODS_FOCUS);
 		
-		// Clear background
+		// Fill background
 		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
 		
-		// Rounded button background for hover/pressed states (no borders)
+		COLORREF iconCol = bPressed ? MAXCARE_TEAL : (bHot ? MAXCARE_TEXT : MAXCARE_TEXT_MUTED);
+		if (nIDCtl == IDC_MAIN_LOGOUT && (bHot || bPressed)) {
+			iconCol = MAXCARE_ERROR; // Highlight logout red on hover/press
+		}
+
+		// Rounded button background for hover/pressed states
 		if (bPressed || bHot) {
 			CRect btnRc = rc; btnRc.DeflateRect(2, 2);
-			CPen pen(PS_NULL, 0, RGB(0,0,0));
-			CBrush brush(bPressed ? MAXCARE_BORDER : MAXCARE_TEAL_SOFT);
-			CPen* pOldPen = pDC->SelectObject(&pen);
+			CPen nullPen(PS_NULL, 0, RGB(0,0,0));
+			CBrush brush(bPressed ? MAXCARE_BORDER : (nIDCtl == IDC_MAIN_LOGOUT ? RGB(253, 235, 235) : MAXCARE_TEAL_SOFT));
+			CPen* pOldPen = pDC->SelectObject(&nullPen);
 			CBrush* pOldBrush = pDC->SelectObject(&brush);
 			pDC->RoundRect(&btnRc, CPoint(8, 8));
 			pDC->SelectObject(pOldPen);
 			pDC->SelectObject(pOldBrush);
 		}
 		
-		// Draw icon centered
-		CButton* pBtn = (CButton*)GetDlgItem(nIDCtl);
-		HICON hIcon = pBtn ? pBtn->GetIcon() : NULL;
-		if (hIcon) {
-			int iconSize = 16;
-			int x = rc.left + (rc.Width() - iconSize) / 2;
-			int y = rc.top + (rc.Height() - iconSize) / 2;
-			::DrawIconEx(pDC->m_hDC, x, y, hIcon, iconSize, iconSize, 0, NULL, DI_NORMAL);
-		}
+		// Render crisp vector icon (3=Menu, 4=Logout)
+		int iconType = (nIDCtl == IDC_MAIN_MENU) ? 3 : 4;
+		DrawModernVectorIcon(pDC, iconType, rc, iconCol, FALSE);
 		return;
 	}
 	CBaseDialog::OnDrawItem(nIDCtl, lpDrawItemStruct);
