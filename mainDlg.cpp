@@ -1670,6 +1670,9 @@ LRESULT CmainDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 
 BOOL CmainDlg::PreTranslateMessage(MSG* pMsg)
 {
+	if (m_ToolTipHeader.m_hWnd) {
+		m_ToolTipHeader.RelayEvent(pMsg);
+	}
 	BOOL catched = FALSE;
 	if (accountSettings.enableMediaButtons) {
 		if (pMsg->message == WM_SHELLHOOKMESSAGE) {
@@ -1695,6 +1698,7 @@ void CmainDlg::OnBnClickedMenu()
 	accountSettings.alwaysOnTop = !accountSettings.alwaysOnTop;
 	SetWindowPos(accountSettings.alwaysOnTop ? &wndTopMost : &wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	accountSettings.SettingsSave();
+	UpdateHeaderButtons();
 }
 
 void CmainDlg::OnBnClickedLogout()
@@ -2077,17 +2081,22 @@ BOOL CmainDlg::OnInitDialog()
 	tab->InsertItem(1, &tabItem);
 	tab->InsertItem(2, &tabItem);
 
-	// Logout button (rightmost) - bring to top of Z-order
-	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+	// Logout button (rightmost) - real push button with door-exit icon
+	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW | BS_PUSHLIKE,
 		CRect(clientRect.right - rightMargin - btnWidth, topMargin, clientRect.right - rightMargin, topMargin + btnHeight), this, IDC_MAIN_LOGOUT);
-	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_EXIT));
 	m_ButtonLogout.SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
-	// Menu button (to the left of logout) - bring to top of Z-order
-	m_ButtonMenu.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+	// Pin button (to the left of logout) - real toggle button like Mute/Hold in call tab
+	m_ButtonMenu.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW | BS_PUSHLIKE | BS_CHECKBOX,
 		CRect(clientRect.right - rightMargin - btnWidth * 2 - btnSpacing, topMargin, clientRect.right - rightMargin - btnWidth - btnSpacing, topMargin + btnHeight), this, IDC_MAIN_MENU);
-	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DEFAULT_STARRED));
 	m_ButtonMenu.SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+
+	if (m_ToolTipHeader.Create(this)) {
+		m_ToolTipHeader.AddTool(&m_ButtonMenu, Translate(_T("Always on Top")));
+		m_ToolTipHeader.AddTool(&m_ButtonLogout, Translate(_T("Logout")));
+		m_ToolTipHeader.Activate(TRUE);
+	}
+	UpdateHeaderButtons();
 
 	AutoMove(tab->m_hWnd, 0, 0, 100, 0);
 	AutoMove(m_ButtonMenu.m_hWnd, 100, 0, 0, 0);
@@ -2341,6 +2350,17 @@ void CmainDlg::OnMenuAlwaysOnTop()
 	accountSettings.alwaysOnTop = 1 - accountSettings.alwaysOnTop;
 	AccountSettingsPendingSave();
 	SetWindowPos(accountSettings.alwaysOnTop ? &this->wndTopMost : &this->wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	UpdateHeaderButtons();
+}
+
+void CmainDlg::UpdateHeaderButtons()
+{
+	if (m_ButtonMenu.m_hWnd) {
+		m_ButtonMenu.Invalidate();
+	}
+	if (m_ButtonLogout.m_hWnd) {
+		m_ButtonLogout.Invalidate();
+	}
 }
 
 void CmainDlg::OnMenuLog()
@@ -4771,24 +4791,38 @@ static void DrawModernVectorIcon(CDC* pDC, int iconType, CRect rc, COLORREF colo
 			pDC->Arc(cx - 7, cy, cx + 7, cy + 10, cx + 7, cy + 6, cx - 7, cy + 6);
 		}
 		break;
-	case 3: // Menu Button (3 Vertical Dots)
-		{
-			CBrush dotBrush(color);
-			pDC->SelectObject(&dotBrush);
-			CPen nullPen(PS_NULL, 0, RGB(0,0,0));
-			pDC->SelectObject(&nullPen);
-			pDC->Ellipse(cx - 2, cy - 6 - 2, cx + 2, cy - 6 + 2);
-			pDC->Ellipse(cx - 2, cy - 2, cx + 2, cy + 2);
-			pDC->Ellipse(cx - 2, cy + 6 - 2, cx + 2, cy + 6 + 2);
-		}
-		break;
-	case 4: // Logout / Exit Button (Power Symbol)
+	case 3: // Pin button (pushpin, diagonal)
 		{
 			CPen p(PS_SOLID, 2, color);
 			pDC->SelectObject(&p);
-			pDC->Arc(cx - 6, cy - 5, cx + 6, cy + 7, cx + 3, cy - 4, cx - 3, cy - 4);
-			pDC->MoveTo(cx, cy - 7);
-			pDC->LineTo(cx, cy + 1);
+			// Pin head
+			pDC->Ellipse(cx - 1, cy - 8, cx + 7, cy + 0);
+			// Pin needle (head to tip)
+			pDC->MoveTo(cx + 1, cy - 2);
+			pDC->LineTo(cx - 5, cy + 7);
+			// Pin cross tick near tip
+			CPen thin(PS_SOLID, 1, color);
+			pDC->SelectObject(&thin);
+			pDC->MoveTo(cx - 6, cy + 2);
+			pDC->LineTo(cx - 1, cy + 5);
+		}
+		break;
+	case 4: // Logout button (door + exit arrow)
+		{
+			CPen p(PS_SOLID, 2, color);
+			pDC->SelectObject(&p);
+			// Door frame: left / top / bottom (open on right)
+			pDC->MoveTo(cx + 1, cy - 6);
+			pDC->LineTo(cx - 6, cy - 6);
+			pDC->LineTo(cx - 6, cy + 6);
+			pDC->LineTo(cx + 1, cy + 6);
+			// Exit arrow shaft
+			pDC->MoveTo(cx - 3, cy);
+			pDC->LineTo(cx + 6, cy);
+			// Arrow head
+			pDC->MoveTo(cx + 3, cy - 3);
+			pDC->LineTo(cx + 6, cy);
+			pDC->LineTo(cx + 3, cy + 3);
 		}
 		break;
 	}
@@ -4847,31 +4881,65 @@ void CmainDlg::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		CRect rc = lpDrawItemStruct->rcItem;
 		UINT state = lpDrawItemStruct->itemState;
 		BOOL bPressed = (state & ODS_SELECTED);
-		BOOL bHot = (state & ODS_HOTLIGHT) || (state & ODS_FOCUS);
-		
-		// Fill background
+		BOOL bHot = (state & ODS_HOTLIGHT);
+		BOOL bFocused = (state & ODS_FOCUS);
+		BOOL isPin = (nIDCtl == IDC_MAIN_MENU);
+		BOOL bActive = isPin && accountSettings.alwaysOnTop;
+
+		// Blend with top bar, then draw a real button face like Mute/Hold (BS_PUSHLIKE)
 		pDC->FillSolidRect(&rc, MAXCARE_SURFACE);
-		
-		COLORREF iconCol = bPressed ? MAXCARE_TEAL : (bHot ? MAXCARE_TEXT : MAXCARE_TEXT_MUTED);
-		if (nIDCtl == IDC_MAIN_LOGOUT && (bHot || bPressed)) {
-			iconCol = MAXCARE_ERROR; // Highlight logout red on hover/press
+
+		CRect btnRc = rc;
+		btnRc.DeflateRect(1, 1);
+
+		COLORREF faceCol = MAXCARE_WHITE;
+		COLORREF borderCol = MAXCARE_BORDER;
+		COLORREF iconCol = MAXCARE_TEXT_SEC;
+
+		if (isPin) {
+			if (bPressed) {
+				faceCol = MAXCARE_TEAL_DARK;
+				borderCol = MAXCARE_TEAL_DARK;
+				iconCol = MAXCARE_WHITE;
+			} else if (bActive) {
+				faceCol = bHot ? MAXCARE_TEAL_LIGHT : MAXCARE_TEAL;
+				borderCol = bHot ? MAXCARE_TEAL_LIGHT : MAXCARE_TEAL;
+				iconCol = MAXCARE_WHITE;
+			} else if (bHot) {
+				faceCol = MAXCARE_TEAL_SOFT;
+				borderCol = MAXCARE_TEAL;
+				iconCol = MAXCARE_TEAL;
+			}
+		} else {
+			if (bPressed) {
+				faceCol = MAXCARE_ERROR;
+				borderCol = MAXCARE_ERROR;
+				iconCol = MAXCARE_WHITE;
+			} else if (bHot) {
+				faceCol = RGB(253, 235, 235);
+				borderCol = MAXCARE_ERROR;
+				iconCol = MAXCARE_ERROR;
+			}
 		}
 
-		// Rounded button background for hover/pressed states
-		if (bPressed || bHot) {
-			CRect btnRc = rc; btnRc.DeflateRect(2, 2);
-			CPen nullPen(PS_NULL, 0, RGB(0,0,0));
-			CBrush brush(bPressed ? MAXCARE_BORDER : (nIDCtl == IDC_MAIN_LOGOUT ? RGB(253, 235, 235) : MAXCARE_TEAL_SOFT));
-			CPen* pOldPen = pDC->SelectObject(&nullPen);
-			CBrush* pOldBrush = pDC->SelectObject(&brush);
-			pDC->RoundRect(&btnRc, CPoint(8, 8));
-			pDC->SelectObject(pOldPen);
-			pDC->SelectObject(pOldBrush);
+		CPen borderPen(PS_SOLID, 1, borderCol);
+		CBrush faceBrush(faceCol);
+		CPen* pOldPen = pDC->SelectObject(&borderPen);
+		CBrush* pOldBrush = pDC->SelectObject(&faceBrush);
+		pDC->RoundRect(&btnRc, CPoint(7, 7));
+		pDC->SelectObject(pOldPen);
+		pDC->SelectObject(pOldBrush);
+
+		// Keyboard focus: subtle dotted outline inside the button face
+		if (bFocused && !bPressed) {
+			CRect focusRc = btnRc;
+			focusRc.DeflateRect(3, 3);
+			pDC->DrawFocusRect(&focusRc);
 		}
-		
-		// Render crisp vector icon (3=Menu, 4=Logout)
-		int iconType = (nIDCtl == IDC_MAIN_MENU) ? 3 : 4;
-		DrawModernVectorIcon(pDC, iconType, rc, iconCol, FALSE);
+
+		// Render crisp vector icon (3=Pin, 4=Logout door-arrow)
+		int iconType = isPin ? 3 : 4;
+		DrawModernVectorIcon(pDC, iconType, btnRc, iconCol, FALSE);
 		return;
 	}
 	CBaseDialog::OnDrawItem(nIDCtl, lpDrawItemStruct);

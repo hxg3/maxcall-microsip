@@ -73,6 +73,8 @@ public:
 	bool m_startMinimized;
 	CButton m_ButtonMenu;
 	CButton m_ButtonLogout;
+	CToolTipCtrl m_ToolTipHeader;
+	void UpdateHeaderButtons();
 	SettingsDlg* settingsDlg;
 	bool shortcutsEnabled;
 	bool shortcutsBottom;
