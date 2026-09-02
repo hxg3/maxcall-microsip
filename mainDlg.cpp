@@ -3435,7 +3435,7 @@ void CmainDlg::PJAccountAddRaw()
 {
 	CString str;
 
-	CString title = _T(_GLOBAL_NAME_NICE);
+	CString title = _T(_GLOBAL_NAME_NICE " v4.0");
 	CString titleAdder;
 	CString usernameLocal;
 	usernameLocal = accountSettings.account.username;
