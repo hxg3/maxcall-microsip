@@ -352,7 +352,7 @@ void CrmPopupDlg::SaveCallerInfo()
 	CString callerNotes = EscapeJson(notes);
 
 	CString postData;
-	postData.Format(_T("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}"), phone, name, callerNotes);
+	postData.Format(_T("{\"phone\":\"%s\",\"name\":\"%s\",\"notes\":\"%s\"}"), (LPCTSTR)phone, (LPCTSTR)name, (LPCTSTR)callerNotes);
 
 	CString headers = _T("Content-Type: application/json; charset=utf-8");
 

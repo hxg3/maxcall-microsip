@@ -5586,6 +5586,7 @@ void CmainDlg::ShowCrmPopup(CString number, CString name, pjsua_call_id call_id)
 			return;
 		}
 		crmPopupDlg->DestroyWindow();
+		delete crmPopupDlg;
 		crmPopupDlg = NULL;
 	}
 
