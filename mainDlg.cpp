@@ -2038,10 +2038,10 @@ BOOL CmainDlg::OnInitDialog()
 	m_ButtonMenu.SetIcon(LoadImageIcon(IDI_DEFAULT_STARRED));
 	m_ButtonMenu.SetWindowText(Translate(_T("Always on Top")));
 	m_ButtonLogout.Create(NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_ICON | BS_FLAT,
-		CRect(_GLOBAL_WIDTH - 39, 3, _GLOBAL_WIDTH - 21, 14), this, IDC_MAIN_LOGOUT);
+		CRect(_GLOBAL_WIDTH - 42, 2, _GLOBAL_WIDTH - 22, 15), this, IDC_MAIN_LOGOUT);
 	m_ButtonLogout.SetIcon(LoadImageIcon(IDI_EXIT));
 	m_ButtonLogout.SetWindowText(Translate(_T("Logout")));
-	m_ButtonMenu.SetWindowPos(NULL, _GLOBAL_WIDTH - 19, 3, 16, 11, SWP_NOZORDER);
+	m_ButtonMenu.SetWindowPos(NULL, _GLOBAL_WIDTH - 21, 2, 18, 13, SWP_NOZORDER);
 
 	if (widthAdd) {
 		CRect pageRect;

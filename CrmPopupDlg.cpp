@@ -13,6 +13,42 @@
 // Forward declare
 class CrmPopupDlg;
 
+class WebMessageReceivedHandler : public ICoreWebView2WebMessageReceivedEventHandler
+{
+public:
+	CrmPopupDlg* m_dlg;
+	ULONG m_refCount;
+
+	WebMessageReceivedHandler(CrmPopupDlg* dlg) : m_dlg(dlg), m_refCount(1) {}
+
+	ULONG STDMETHODCALLTYPE AddRef() override { return ++m_refCount; }
+	ULONG STDMETHODCALLTYPE Release() override {
+		ULONG count = --m_refCount;
+		if (count == 0) delete this;
+		return count;
+	}
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
+		if (riid == IID_ICoreWebView2WebMessageReceivedEventHandler) {
+			*ppv = static_cast<ICoreWebView2WebMessageReceivedEventHandler*>(this);
+			AddRef();
+			return S_OK;
+		}
+		*ppv = nullptr;
+		return E_NOINTERFACE;
+	}
+
+	HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* webview, ICoreWebView2WebMessageReceivedEventArgs* args) override
+	{
+		CComBSTR msg;
+		args->TryGetWebMessageAsString(&msg);
+		if (msg) {
+			CString strMsg(msg);
+			PostMessage(m_dlg->m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)new CString(strMsg));
+		}
+		return S_OK;
+	}
+};
+
 // WebView2 Environment callback
 class EnvCallback : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
 {
@@ -172,6 +208,18 @@ HRESULT CtrlCallback::Invoke(HRESULT result, ICoreWebView2Controller* controller
 		controller->get_CoreWebView2(&wv);
 		if (wv) {
 			m_dlg->m_webView = wv;
+
+			ICoreWebView2Settings* settings = nullptr;
+			wv->get_Settings(&settings);
+			if (settings) {
+				settings->put_IsWebMessageEnabled(TRUE);
+				settings->Release();
+			}
+
+			EventRegistrationToken token;
+			wv->add_WebMessageReceived(
+				new WebMessageReceivedHandler(m_dlg),
+				&token);
 
 			HRSRC hRes = FindResource(NULL, MAKEINTRESOURCE(IDR_CRM_POPUP_HTML), RT_RCDATA);
 			if (hRes) {

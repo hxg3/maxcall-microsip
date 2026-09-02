@@ -11,6 +11,7 @@ tailwind.config={theme:{extend:{colors:{teal:"#087B78","teal-dark":"#075B59","te
 <style>
 *{font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#F8FAFA;margin:0;padding:0}
+input:focus,textarea:focus{outline:none;box-shadow:0 0 0 2px rgba(8,123,120,0.15);border-color:#087B78}
 </style>
 </head>
 <body>
@@ -31,19 +32,20 @@ body{background:#F8FAFA;margin:0;padding:0}
 <div class="px-4 pt-3 pb-2">
   <label class="text-[11px] font-semibold text-ink-sec uppercase tracking-wide block mb-1.5">Name</label>
   <input type="text" id="callerNameInput" placeholder="Enter caller name"
-    class="w-full px-3 py-2 border border-border rounded-lg text-sm text-ink bg-white focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal transition">
+    class="w-full px-3 py-2 border border-border rounded-lg text-sm text-ink bg-white transition">
 </div>
 
 <!-- Notes -->
 <div class="px-4 pb-3">
   <label class="text-[11px] font-semibold text-ink-sec uppercase tracking-wide block mb-1.5">Notes</label>
   <textarea id="notes" rows="3" placeholder="Notes about this caller..."
-    class="w-full px-3 py-2 border border-border rounded-lg text-sm text-ink bg-white focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none transition"></textarea>
+    class="w-full px-3 py-2 border border-border rounded-lg text-sm text-ink bg-white resize-none transition"></textarea>
 </div>
 
 <!-- Save -->
 <div class="px-4 pb-4">
-  <button onclick="save()" class="w-full bg-teal hover:bg-teal-dark text-white font-semibold py-2 rounded-lg transition text-sm">
+  <button id="saveBtn" onclick="save()"
+    class="w-full bg-teal hover:bg-teal-dark text-white font-semibold py-2 rounded-lg transition text-sm">
     Save
   </button>
 </div>
@@ -55,7 +57,7 @@ function updateCallerInfo(number, name, notes, callId) {
   callerData = {number, name: name || 'Unknown', notes: notes || '', callId};
   document.getElementById('callerName').textContent = callerData.name;
   document.getElementById('callerNumber').textContent = callerData.number;
-  document.getElementById('callerNameInput').value = callerData.name;
+  document.getElementById('callerNameInput').value = callerData.name !== 'Unknown' ? callerData.name : '';
   document.getElementById('notes').value = callerData.notes;
   document.getElementById('avatar').textContent = callerData.name.charAt(0).toUpperCase();
 
@@ -70,10 +72,18 @@ function updateCallerInfo(number, name, notes, callId) {
 }
 
 function save() {
-  const name = document.getElementById('callerNameInput').value.trim();
-  const notes = document.getElementById('notes').value.trim();
-  if (window.chrome && window.chrome.webview) {
-    window.chrome.webview.postMessage(JSON.stringify({action:'save', name, notes}));
+  var name = document.getElementById('callerNameInput').value.trim();
+  var notes = document.getElementById('notes').value.trim();
+  var btn = document.getElementById('saveBtn');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+
+  try {
+    if (window.chrome && window.chrome.webview) {
+      window.chrome.webview.postMessage(JSON.stringify({action:'save', name:name, notes:notes}));
+    }
+  } catch(e) {
+    console.error('postMessage failed:', e);
   }
 }
 

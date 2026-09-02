@@ -452,7 +452,7 @@ BOOL Dialer::OnInitDialog()
 	((CButton*)GetDlgItem(IDC_HOLD))->SetIcon(m_hIconHold);
 	m_hIconTransfer = LoadImageIcon(IDI_TRANSFER);
 	((CButton*)GetDlgItem(IDC_TRANSFER))->SetIcon(m_hIconTransfer);
-	((CButton*)GetDlgItem(IDC_CRM_OPEN))->SetIcon(LoadImageIcon(IDI_CONTACT));
+	((CButton*)GetDlgItem(IDC_CRM_OPEN))->SetIcon(LoadImageIcon(IDI_SEARCH));
 	GetDlgItem(IDC_CRM_OPEN)->SetWindowText(Translate(_T("Caller details")));
 	GetDlgItem(IDC_MESSAGE)->ShowWindow(SW_HIDE);
 #ifdef _GLOBAL_VIDEO

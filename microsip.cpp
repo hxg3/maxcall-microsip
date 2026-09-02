@@ -313,25 +313,25 @@ BOOL CmicrosipApp::InitInstance()
 		&& lstrcmp(theApp.m_lpCmdLine, _T("/exit")) != 0
 		&& lstrcmp(theApp.m_lpCmdLine, _T("/reset")) != 0
 		) {
-		CSplashScreen splash;
-		splash.Create(NULL);
-
-		MSG msg;
-		DWORD splashStart = GetTickCount();
-		while (GetTickCount() - splashStart < 2000) {
-			while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-			Sleep(10);
-		}
-		splash.Close();
-
 		LoginDlg loginDlg;
 		if (loginDlg.DoModal() != IDOK || !loginDlg.loginSuccess) {
 			return FALSE;
 		}
 	}
+
+	CSplashScreen splash;
+	splash.Create(NULL);
+
+	MSG msg;
+	DWORD splashStart = GetTickCount();
+	while (GetTickCount() - splashStart < 3000) {
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		Sleep(10);
+	}
+	splash.Close();
 
 	CmainDlg *mainDlg = new CmainDlg;
 	m_pMainWnd = mainDlg;

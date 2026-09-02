@@ -390,16 +390,20 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 		crOldColor = pDC->SetTextColor(MAXCARE_TEAL);
 	else if (bVistaHotTracked)
 		crOldColor = pDC->SetTextColor(MAXCARE_TEAL_DARK);
+	else
+		crOldColor = pDC->SetTextColor(MAXCARE_TEXT_SEC);
+
+	CFont fontTab;
+	fontTab.CreateFont(-11, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
+		DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+		CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Segoe UI"));
+	CFont* pOldFont = pDC->SelectObject(&fontTab);
 
 	rect.top += bSelected ? 4 : 3;
-	// Vista: Tab control has troubles with determining the width of a tab if the
-	// label contains one '&' character. To get around this, we use the old code which
-	// replaces one '&' character with two '&' characters and we do not specify DT_NOPREFIX
-	// here when drawing the text.
-	//
-	// Vista: "DrawThemeText" can not be used in case we need a certain foreground color. Thus we always us
-	// "DrawText" to always get the same font and metrics (just for safety).
-	pDC->DrawText(szLabel, rect, DT_SINGLELINE | DT_TOP | DT_CENTER /*| DT_NOPREFIX*/);
+	pDC->DrawText(szLabel, rect, DT_SINGLELINE | DT_TOP | DT_CENTER);
+
+	pDC->SelectObject(pOldFont);
+	fontTab.DeleteObject();
 
 	if (crOldColor != CLR_NONE)
 		pDC->SetTextColor(crOldColor);
